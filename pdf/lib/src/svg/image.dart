@@ -79,9 +79,9 @@ class SvgImg extends SvgOperation {
 
           image = PdfImage(
             painter.document,
-            image: img!.data?.buffer.asUint8List() ?? Uint8List(0),
-            width: img!.width,
-            height: img!.height,
+            image: img.data?.buffer.asUint8List() ?? Uint8List(0),
+            width: img.width,
+            height: img.height,
           );
         }
       }
