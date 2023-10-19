@@ -74,7 +74,7 @@ class SvgImg extends SvgOperation {
 
           final img = im.decodeImage(bytes);
           if (img == null) {
-            throw Exception('Unable to decode image: $px (from ${element.toXmlString()})');
+            throw Exception('Unable to decode image: $px');
           }
 
           image = PdfImage(
