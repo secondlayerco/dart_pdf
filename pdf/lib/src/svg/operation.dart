@@ -71,7 +71,7 @@ abstract class SvgOperation {
           return SvgUse.fromXml(element, painter, brush);
       }
     } catch (e) {
-      console.error('[Error]<Error parsing SVG element: ${element.name.local}>');
+      print('[Error]<Error parsing SVG element: ${element.name.local}>');
       return null;
     }
 
