@@ -72,12 +72,16 @@ class SvgImg extends SvgOperation {
           final b = px.substring(7).replaceAll(RegExp(r'\s'), '');
           final bytes = base64.decode(b);
 
-          final img = im.decodeImage(bytes)!;
+          final img = im.decodeImage(bytes);
+          if (img == null) {
+            throw Exception('Unable to decode image: $b');
+          }
+
           image = PdfImage(
             painter.document,
-            image: img.data?.buffer.asUint8List() ?? Uint8List(0),
-            width: img.width,
-            height: img.height,
+            image: img!.data?.buffer.asUint8List() ?? Uint8List(0),
+            width: img!.width,
+            height: img!.height,
           );
         }
       }
