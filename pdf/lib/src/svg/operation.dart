@@ -42,8 +42,7 @@ abstract class SvgOperation {
       return null;
     }
 
-    // Catch potential errors
-    // There is a known issue with the image export: https://github.com/DavBfr/dart_pdf/issues/1487
+    // Napkin update: catch potential errors instead of crashing
     try {
       switch (element.name.local) {
         case 'circle':
@@ -72,6 +71,7 @@ abstract class SvgOperation {
           return SvgUse.fromXml(element, painter, brush);
       }
     } catch (e) {
+      console.error('[Error]<Error parsing SVG element: ${element.name.local}>');
       return null;
     }
 
