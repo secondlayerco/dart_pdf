@@ -188,11 +188,16 @@ class EmbeddedSvg extends SvgOperation {
   void paintShape(PdfGraphics canvas) {
     print('EmbeddedSvg.paintShape');
 
-
+    canvas
+      ..saveContext()
+      ..setTransform(Matrix4.identity()
+        ..translate(x, -y));
 
     for (final child in children) {
-      // child.paint(canvas);
+      child.paint(canvas);
     }
+
+    canvas.restoreContext();
   }
 
   @override
