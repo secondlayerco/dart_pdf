@@ -88,7 +88,7 @@ class EmbeddedSvg extends SvgOperation {
           // colorFilter: colorFilter,
         );
 
-        print('VERSION 2');
+        print('VERSION 3');
 
 
 
@@ -186,6 +186,7 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas) {
+    print('EmbeddedSvg.drawShape');
     for (final child in children) {
       child.paint(canvas);
     }
@@ -193,6 +194,7 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   void drawShape(PdfGraphics canvas) {
+    print('EmbeddedSvg.drawShape');
     if (x != 0 || y != 0) {
       canvas.setTransform(Matrix4.translationValues(x, y, 0));
     }
