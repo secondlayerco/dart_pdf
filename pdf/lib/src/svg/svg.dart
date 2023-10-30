@@ -187,8 +187,11 @@ class EmbeddedSvg extends SvgOperation {
   @override
   void paintShape(PdfGraphics canvas) {
     print('EmbeddedSvg.paintShape');
+
+
+
     for (final child in children) {
-      child.paint(canvas);
+      // child.paint(canvas);
     }
   }
 
