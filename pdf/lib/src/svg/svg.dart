@@ -41,6 +41,14 @@ class EmbeddedSvg extends SvgOperation {
       XmlElement element, SvgPainter painter, SvgBrush brush) {
     final _brush = SvgBrush.fromXml(element, brush, painter);
 
+    print('element.outerXml: ${element.outerXml}');
+    print('element.root.outerXml: ${element.root.outerXml}');
+    print('element.attributes: ${element.attributes}');
+
+    // TODO:
+    // - Get the width and height from the SVG
+    // - Get the transform X & Y position from the parent transform
+
     final hrefAttr = element.getAttribute('href') ??
         element.getAttribute('href', namespace: 'http://www.w3.org/1999/xlink');
 
