@@ -87,7 +87,7 @@ class EmbeddedSvg extends SvgOperation {
           // colorFilter: colorFilter,
         );
 
-        print('VERSION 1');
+        print('VERSION 2');
 
 
 
@@ -198,7 +198,10 @@ class EmbeddedSvg extends SvgOperation {
   }
 
   @override
-  PdfRect boundingBox() => PdfRect(x, y, width, height);
+  PdfRect boundingBox() {
+    print('EmbeddedSvg.boundingBox');
+    return PdfRect(x, y, width, height);
+  }
   // PdfRect boundingBox() {
   //   var x = double.infinity, y = double.infinity, w = 0.0, h = 0.0;
   //   for (final child in children) {
