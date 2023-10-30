@@ -22,6 +22,7 @@ import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
+import '../../widgets.dart';
 import 'brush.dart';
 import 'clip_path.dart';
 import 'operation.dart';
@@ -65,13 +66,18 @@ class SvgImg extends SvgOperation {
     final hrefAttr = element.getAttribute('href') ??
         element.getAttribute('href', namespace: 'http://www.w3.org/1999/xlink');
 
-    if (hrefAttr != null) {
-      if (hrefAttr.startsWith('data:')) {
-        final px = hrefAttr.substring(hrefAttr.indexOf(';') + 1);
-        if (px.startsWith('base64,')) {
-          final b = px.substring(7).replaceAll(RegExp(r'\s'), '');
-          final bytes = base64.decode(b);
+    if (hrefAttr != null && hrefAttr.startsWith('data:')) {
+      final px = hrefAttr.substring(hrefAttr.indexOf(';') + 1);
+      if (px.startsWith('base64,')) {
+        final b = px.substring(7).replaceAll(RegExp(r'\s'), '');
+        final bytes = base64.decode(b);
 
+        if (hrefAttr.startsWith('data:image/svg+xml')) {
+          final svgValue = utf8.decode(bytes);
+          print('svgValue: $svgValue');
+          final svgImage = SvgImage(svg: svgValue);
+          print('svgImage: $svgImage');
+        } else {
           final img = im.decodeImage(bytes);
           if (img == null) {
             throw Exception('Unable to decode image: $px');
