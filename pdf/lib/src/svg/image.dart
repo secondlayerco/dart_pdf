@@ -77,10 +77,6 @@ class SvgImg extends SvgOperation {
         final bytes = base64.decode(b);
 
         if (hrefAttr.startsWith('data:image/svg+xml')) {
-          // final svgValue = utf8.decode(bytes);
-          // print('svgValue: $svgValue');
-          // final svgImage = SvgImage(svg: svgValue);
-          // print('svgImage: $svgImage');
           throw EmbeddedSvgUnsupportedError;
         } else {
           final img = im.decodeImage(bytes);
@@ -129,8 +125,6 @@ class SvgImg extends SvgOperation {
 
     final sx = width / image!.width;
     final sy = height / image!.height;
-
-    print('SvgImg.paintShape: $x, $y, $width, $height, $sx, $sy');
 
     canvas
       ..setTransform(

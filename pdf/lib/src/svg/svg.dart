@@ -15,13 +15,11 @@
  */
 
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
-import '../../widgets.dart';
 import 'brush.dart';
 import 'clip_path.dart';
 import 'operation.dart';
@@ -48,15 +46,6 @@ class EmbeddedSvg extends SvgOperation {
       XmlElement element, SvgPainter painter, SvgBrush brush) {
     final _brush = SvgBrush.fromXml(element, brush, painter);
 
-    print('element.outerXml: ${element.outerXml}');
-    print('element.root.outerXml: ${element.root.outerXml}');
-    print('element.attributes: ${element.attributes}');
-  
-
-    // TODO:
-    // - Get the width and height from the SVG
-    // - Get the transform X & Y position from the parent transform
-
     final parentWidth =
         SvgParser.getNumeric(element, 'width', _brush, defaultValue: 0)!
             .sizeValue;
@@ -68,8 +57,6 @@ class EmbeddedSvg extends SvgOperation {
     final y =
         SvgParser.getNumeric(element, 'y', _brush, defaultValue: 0)!.sizeValue;
 
-    print('width: $parentWidth height: $parentHeight x: $x y: $y');
-
     final hrefAttr = element.getAttribute('href') ??
         element.getAttribute('href', namespace: 'http://www.w3.org/1999/xlink');
 
@@ -80,33 +67,12 @@ class EmbeddedSvg extends SvgOperation {
         final bytes = base64.decode(b);
 
         final svgValue = utf8.decode(bytes);
-        print('svgValue: $svgValue');
-        // final svgImage = SvgImage(svg: svgValue);
-        // print('svgImage: $svgImage');
 
         final xml = XmlDocument.parse(svgValue);
         final parser = SvgParser(
           xml: xml,
-          // colorFilter: colorFilter,
+          colorFilter: painter.parser.colorFilter,
         );
-
-        print('VERSION 5');
-
-
-
-        // final rootChildren = <XmlNode>[];
-
-        // for (final child in parser.root.children) {
-        //   if (child is! XmlElement) {
-        //     continue;
-        //   }
-        //   print('child.name.local: ${child.name.local}');
-        //   if (child.name.local == 'g') {
-        //     rootChildren.addAll(child.children);
-        //   } else {
-        //     rootChildren.add(child);
-        //   }
-        // }
 
         final children = parser.root.children
           .whereType<XmlElement>()
@@ -114,24 +80,6 @@ class EmbeddedSvg extends SvgOperation {
           .map<SvgOperation?>(
               (child) => SvgOperation.fromXml(child, painter, _brush))
           .whereType<SvgOperation>();
-
-        print('\n\n------------\n\n');
-
-        void logChildren(List<XmlNode> nodes, int level) {
-          for (final node in nodes) {
-            if (node is XmlElement) {
-              print('${'CHILD =>  ' * level}${node.name.local}');
-              logChildren(node.children, level + 1);
-            }
-          }
-        }
-
-        logChildren(parser.root.children, 0);
-
-        print('\n\n------------\n\n');
-
-        
-
 
         return EmbeddedSvg(
           children,
@@ -163,21 +111,6 @@ class EmbeddedSvg extends SvgOperation {
       SvgTransform.fromXml(element),
       painter,
     );
-
-    // final children = element.children
-    //     .whereType<XmlElement>()
-    //     .where((element) => element.name.local != 'symbol')
-    //     .map<SvgOperation?>(
-    //         (child) => SvgOperation.fromXml(child, painter, _brush))
-    //     .whereType<SvgOperation>();
-
-    // return EmbeddedSvg(
-    //   children,
-    //   _brush,
-    //   SvgClipPath.fromXml(element, painter, _brush),
-    //   SvgTransform.fromXml(element),
-    //   painter,
-    // );
   }
 
   final double x;
@@ -194,8 +127,6 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas) {
-    print('EmbeddedSvg.paintShape (x: $x y: $y scaleX: ${parentWidth / width} scaleY: ${parentHeight / height})');
-
     final sx = parentWidth / width;
     final sy = parentHeight / height;
 
@@ -214,7 +145,6 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   void drawShape(PdfGraphics canvas) {
-    print('EmbeddedSvg.drawShape');
     for (final child in children) {
       child.draw(canvas);
     }
@@ -222,19 +152,6 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   PdfRect boundingBox() {
-    print('EmbeddedSvg.boundingBox');
     return PdfRect(x, y, width, height);
   }
-  // PdfRect boundingBox() {
-  //   var x = double.infinity, y = double.infinity, w = 0.0, h = 0.0;
-  //   for (final child in children) {
-  //     final b = child.boundingBox();
-  //     x = min(b.x, x);
-  //     y = min(b.y, y);
-  //     w = max(b.width, w);
-  //     h = max(b.height, w);
-  //   }
-
-  //   return PdfRect(x, y, w, h);
-  // }
 }
