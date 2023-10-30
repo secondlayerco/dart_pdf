@@ -90,7 +90,7 @@ class EmbeddedSvg extends SvgOperation {
           // colorFilter: colorFilter,
         );
 
-        print('VERSION 4');
+        print('VERSION 5');
 
 
 
@@ -194,7 +194,7 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas) {
-    print('EmbeddedSvg.paintShape');
+    print('EmbeddedSvg.paintShape (x: $x y: $y scaleX: ${parentWidth / width} scaleY: ${parentHeight / height})');
 
     canvas
       ..saveContext()
