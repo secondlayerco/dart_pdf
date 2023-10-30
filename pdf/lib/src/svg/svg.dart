@@ -92,7 +92,11 @@ class EmbeddedSvg extends SvgOperation {
         final rootChildren = <XmlNode>[];
 
         for (final child in parser.root.children) {
-          if (element.name.local == 'g') {
+          if (child is! XmlElement) {
+            continue;
+          }
+          print('child.name.local: ${child.name.local}');
+          if (child.name.local == 'g') {
             rootChildren.addAll(child.children);
           } else {
             rootChildren.add(child);
