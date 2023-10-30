@@ -130,6 +130,8 @@ class SvgImg extends SvgOperation {
     final sx = width / image!.width;
     final sy = height / image!.height;
 
+    print('SvgImg.paintShape: $x, $y, $width, $height, $sx, $sy');
+
     canvas
       ..setTransform(
         Matrix4.identity()
