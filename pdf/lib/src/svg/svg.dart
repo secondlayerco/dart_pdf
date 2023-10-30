@@ -89,7 +89,7 @@ class EmbeddedSvg extends SvgOperation {
 
 
 
-        final rootChildren = [];
+        final rootChildren = <XmlNode>[];
 
         for (final child in parser.root.children) {
           if (element.name.local == 'g') {
@@ -108,14 +108,16 @@ class EmbeddedSvg extends SvgOperation {
 
         print('\n\n------------\n\n');
 
-        void logChildren(XmlNode node, int level) {
-          if (node is XmlElement) {
-            print('${'Child  ' * level}${node.name.local} => ${node.outerXml} \n\n');
-            node.children.forEach((child) => logChildren(child, level + 1));
+        void logChildren(List<XmlNode> nodes, int level) {
+          for (final node in nodes) {
+            if (node is XmlElement) {
+              print('${'CHILD =>  ' * level}${node.name.local}');
+              logChildren(node.children, level + 1);
+            }
           }
         }
 
-        logChildren(parser.root, 0);
+        logChildren(rootChildren, 0);
 
         print('\n\n------------\n\n');
 
