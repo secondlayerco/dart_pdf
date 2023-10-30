@@ -92,7 +92,7 @@ class EmbeddedSvg extends SvgOperation {
         final rootChildren = [];
 
         for (final child in parser.root.children) {
-          if (element.name.local == 'group') {
+          if (element.name.local == 'g') {
             rootChildren.addAll(child.children);
           } else {
             rootChildren.add(child);
