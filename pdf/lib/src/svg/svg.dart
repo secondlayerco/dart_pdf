@@ -49,6 +49,19 @@ class EmbeddedSvg extends SvgOperation {
     print('element.root.outerXml: ${element.root.outerXml}');
     print('element.attributes: ${element.attributes}');
 
+    // print('children: ${children.map((e) => (e as XmlElement).name.local + ' ' + (e as XmlElement).outerXml).toList()})}');
+
+    // Log the children of the group recursively
+    
+    void logChildren(XmlNode node, int level) {
+      if (node is XmlElement) {
+        print('${'  ' * level}${node.name.local} => ${node.outerXml}');
+        node.children.forEach((child) => logChildren(child, level + 1));
+      }
+    }
+
+    logChildren(element, 0);
+
     // TODO:
     // - Get the width and height from the SVG
     // - Get the transform X & Y position from the parent transform
