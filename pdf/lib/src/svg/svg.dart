@@ -31,6 +31,10 @@ import 'transform.dart';
 class EmbeddedSvg extends SvgOperation {
   EmbeddedSvg(
     this.children,
+    this.width,
+    this.height,
+    this.x,
+    this.y,
     SvgBrush brush,
     SvgClipPath clip,
     SvgTransform transform,
@@ -48,6 +52,17 @@ class EmbeddedSvg extends SvgOperation {
     // TODO:
     // - Get the width and height from the SVG
     // - Get the transform X & Y position from the parent transform
+
+    final width =
+        SvgParser.getNumeric(element, 'width', _brush, defaultValue: 0)!
+            .sizeValue;
+    final height =
+        SvgParser.getNumeric(element, 'height', _brush, defaultValue: 0)!
+            .sizeValue;
+    final x =
+        SvgParser.getNumeric(element, 'x', _brush, defaultValue: 0)!.sizeValue;
+    final y =
+        SvgParser.getNumeric(element, 'y', _brush, defaultValue: 0)!.sizeValue;
 
     final hrefAttr = element.getAttribute('href') ??
         element.getAttribute('href', namespace: 'http://www.w3.org/1999/xlink');
@@ -78,6 +93,10 @@ class EmbeddedSvg extends SvgOperation {
 
         return EmbeddedSvg(
           children,
+          width,
+          height,
+          x,
+          y,
           _brush,
           SvgClipPath.fromXml(element, painter, _brush),
           SvgTransform.fromXml(element),
@@ -89,6 +108,10 @@ class EmbeddedSvg extends SvgOperation {
 
     return EmbeddedSvg(
       [],
+      width,
+      height,
+      x,
+      y,
       _brush,
       SvgClipPath.fromXml(element, painter, _brush),
       SvgTransform.fromXml(element),
@@ -111,6 +134,14 @@ class EmbeddedSvg extends SvgOperation {
     // );
   }
 
+  final double x;
+
+  final double y;
+
+  final double width;
+
+  final double height;
+
   final Iterable<SvgOperation> children;
 
   @override
@@ -128,16 +159,17 @@ class EmbeddedSvg extends SvgOperation {
   }
 
   @override
-  PdfRect boundingBox() {
-    var x = double.infinity, y = double.infinity, w = 0.0, h = 0.0;
-    for (final child in children) {
-      final b = child.boundingBox();
-      x = min(b.x, x);
-      y = min(b.y, y);
-      w = max(b.width, w);
-      h = max(b.height, w);
-    }
+  PdfRect boundingBox() => PdfRect(x, y, width, height);
+  // PdfRect boundingBox() {
+  //   var x = double.infinity, y = double.infinity, w = 0.0, h = 0.0;
+  //   for (final child in children) {
+  //     final b = child.boundingBox();
+  //     x = min(b.x, x);
+  //     y = min(b.y, y);
+  //     w = max(b.width, w);
+  //     h = max(b.height, w);
+  //   }
 
-    return PdfRect(x, y, w, h);
-  }
+  //   return PdfRect(x, y, w, h);
+  // }
 }
