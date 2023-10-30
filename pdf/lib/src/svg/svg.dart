@@ -92,21 +92,21 @@ class EmbeddedSvg extends SvgOperation {
 
 
 
-        final rootChildren = <XmlNode>[];
+        // final rootChildren = <XmlNode>[];
 
-        for (final child in parser.root.children) {
-          if (child is! XmlElement) {
-            continue;
-          }
-          print('child.name.local: ${child.name.local}');
-          if (child.name.local == 'g') {
-            rootChildren.addAll(child.children);
-          } else {
-            rootChildren.add(child);
-          }
-        }
+        // for (final child in parser.root.children) {
+        //   if (child is! XmlElement) {
+        //     continue;
+        //   }
+        //   print('child.name.local: ${child.name.local}');
+        //   if (child.name.local == 'g') {
+        //     rootChildren.addAll(child.children);
+        //   } else {
+        //     rootChildren.add(child);
+        //   }
+        // }
 
-        final children = rootChildren
+        final children = parser.root.children
           .whereType<XmlElement>()
           .where((element) => element.name.local != 'symbol')
           .map<SvgOperation?>(
@@ -124,7 +124,7 @@ class EmbeddedSvg extends SvgOperation {
           }
         }
 
-        logChildren(rootChildren, 0);
+        logChildren(parser.root.children, 0);
 
         print('\n\n------------\n\n');
 
@@ -186,7 +186,7 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas) {
-    print('EmbeddedSvg.drawShape');
+    print('EmbeddedSvg.paintShape');
     for (final child in children) {
       child.paint(canvas);
     }
@@ -195,9 +195,6 @@ class EmbeddedSvg extends SvgOperation {
   @override
   void drawShape(PdfGraphics canvas) {
     print('EmbeddedSvg.drawShape');
-    if (x != 0 || y != 0) {
-      canvas.setTransform(Matrix4.translationValues(x, y, 0));
-    }
     for (final child in children) {
       child.draw(canvas);
     }
