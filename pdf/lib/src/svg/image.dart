@@ -22,13 +22,17 @@ import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
-import '../../widgets.dart';
 import 'brush.dart';
 import 'clip_path.dart';
 import 'operation.dart';
 import 'painter.dart';
 import 'parser.dart';
 import 'transform.dart';
+
+class EmbeddedSvgUnsupportedError extends Error {
+  @override
+  String toString() => 'EmbeddedSvgUnsupportedError';
+}
 
 class SvgImg extends SvgOperation {
   SvgImg(
@@ -73,10 +77,11 @@ class SvgImg extends SvgOperation {
         final bytes = base64.decode(b);
 
         if (hrefAttr.startsWith('data:image/svg+xml')) {
-          final svgValue = utf8.decode(bytes);
-          print('svgValue: $svgValue');
-          final svgImage = SvgImage(svg: svgValue);
-          print('svgImage: $svgImage');
+          // final svgValue = utf8.decode(bytes);
+          // print('svgValue: $svgValue');
+          // final svgImage = SvgImage(svg: svgValue);
+          // print('svgImage: $svgImage');
+          throw EmbeddedSvgUnsupportedError;
         } else {
           final img = im.decodeImage(bytes);
           if (img == null) {
