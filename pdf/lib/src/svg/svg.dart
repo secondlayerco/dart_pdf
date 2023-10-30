@@ -196,13 +196,13 @@ class EmbeddedSvg extends SvgOperation {
   void paintShape(PdfGraphics canvas) {
     print('EmbeddedSvg.paintShape (x: $x y: $y scaleX: ${parentWidth / width} scaleY: ${parentHeight / height})');
 
-    final sx = parentWidth / width;
-    final sy = parentHeight / height;
+    // final sx = parentWidth / width;
+    // final sy = parentHeight / height;
 
     canvas
       ..saveContext()
       ..setTransform(Matrix4.identity()
-        ..scale(2, 2, 1)
+        ..scale(2.0, 2.0, 1.0)
         ..translate(x, y));
 
     for (final child in children) {
