@@ -87,6 +87,8 @@ class EmbeddedSvg extends SvgOperation {
           // colorFilter: colorFilter,
         );
 
+        print('VERSION 1');
+
 
 
         final rootChildren = <XmlNode>[];
