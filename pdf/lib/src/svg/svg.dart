@@ -87,7 +87,19 @@ class EmbeddedSvg extends SvgOperation {
           // colorFilter: colorFilter,
         );
 
-        final children = parser.root.children
+
+
+        final rootChildren = [];
+
+        for (final child in parser.root.children) {
+          if (element.name.local == 'group') {
+            rootChildren.addAll(child.children);
+          } else {
+            rootChildren.add(child);
+          }
+        }
+
+        final children = rootChildren
           .whereType<XmlElement>()
           .where((element) => element.name.local != 'symbol')
           .map<SvgOperation?>(
@@ -106,6 +118,9 @@ class EmbeddedSvg extends SvgOperation {
         logChildren(parser.root, 0);
 
         print('\n\n------------\n\n');
+
+        
+
 
         return EmbeddedSvg(
           children,
