@@ -64,6 +64,8 @@ class EmbeddedSvg extends SvgOperation {
     final y =
         SvgParser.getNumeric(element, 'y', _brush, defaultValue: 0)!.sizeValue;
 
+    print('width: $width height: $height x: $x y: $y');
+
     final hrefAttr = element.getAttribute('href') ??
         element.getAttribute('href', namespace: 'http://www.w3.org/1999/xlink');
 
