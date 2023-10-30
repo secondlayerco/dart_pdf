@@ -34,6 +34,8 @@ class EmbeddedSvg extends SvgOperation {
     this.children,
     this.width,
     this.height,
+    this.parentWidth,
+    this.parentHeight,
     this.x,
     this.y,
     SvgBrush brush,
@@ -55,10 +57,10 @@ class EmbeddedSvg extends SvgOperation {
     // - Get the width and height from the SVG
     // - Get the transform X & Y position from the parent transform
 
-    final width =
+    final parentWidth =
         SvgParser.getNumeric(element, 'width', _brush, defaultValue: 0)!
             .sizeValue;
-    final height =
+    final parentHeight =
         SvgParser.getNumeric(element, 'height', _brush, defaultValue: 0)!
             .sizeValue;
     final x =
@@ -66,7 +68,7 @@ class EmbeddedSvg extends SvgOperation {
     final y =
         SvgParser.getNumeric(element, 'y', _brush, defaultValue: 0)!.sizeValue;
 
-    print('width: $width height: $height x: $x y: $y');
+    print('width: $parentWidth height: $parentHeight x: $x y: $y');
 
     final hrefAttr = element.getAttribute('href') ??
         element.getAttribute('href', namespace: 'http://www.w3.org/1999/xlink');
@@ -88,7 +90,7 @@ class EmbeddedSvg extends SvgOperation {
           // colorFilter: colorFilter,
         );
 
-        print('VERSION 3');
+        print('VERSION 4');
 
 
 
@@ -133,8 +135,10 @@ class EmbeddedSvg extends SvgOperation {
 
         return EmbeddedSvg(
           children,
-          width,
-          height,
+          parser.width ?? parentWidth,
+          parser.height ?? parentHeight,
+          parentWidth,
+          parentHeight,
           x,
           y,
           _brush,
@@ -148,8 +152,10 @@ class EmbeddedSvg extends SvgOperation {
 
     return EmbeddedSvg(
       [],
-      width,
-      height,
+      parentWidth,
+      parentHeight,
+      parentWidth,
+      parentHeight,
       x,
       y,
       _brush,
@@ -178,8 +184,10 @@ class EmbeddedSvg extends SvgOperation {
 
   final double y;
 
+  final double parentWidth;
   final double width;
 
+  final double parentHeight;
   final double height;
 
   final Iterable<SvgOperation> children;
@@ -191,6 +199,7 @@ class EmbeddedSvg extends SvgOperation {
     canvas
       ..saveContext()
       ..setTransform(Matrix4.identity()
+        ..scale(parentWidth / width, parentHeight / height)
         ..translate(x, y));
 
     for (final child in children) {
