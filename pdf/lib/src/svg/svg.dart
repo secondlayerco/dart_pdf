@@ -48,19 +48,7 @@ class EmbeddedSvg extends SvgOperation {
     print('element.outerXml: ${element.outerXml}');
     print('element.root.outerXml: ${element.root.outerXml}');
     print('element.attributes: ${element.attributes}');
-
-    // print('children: ${children.map((e) => (e as XmlElement).name.local + ' ' + (e as XmlElement).outerXml).toList()})}');
-
-    // Log the children of the group recursively
-    
-    void logChildren(XmlNode node, int level) {
-      if (node is XmlElement) {
-        print('${'  ' * level}${node.name.local} => ${node.outerXml}');
-        node.children.forEach((child) => logChildren(child, level + 1));
-      }
-    }
-
-    logChildren(element, 0);
+  
 
     // TODO:
     // - Get the width and height from the SVG
@@ -105,6 +93,19 @@ class EmbeddedSvg extends SvgOperation {
           .map<SvgOperation?>(
               (child) => SvgOperation.fromXml(child, painter, _brush))
           .whereType<SvgOperation>();
+
+        print('\n\n------------\n\n');
+
+        void logChildren(XmlNode node, int level) {
+          if (node is XmlElement) {
+            print('${'Child  ' * level}${node.name.local} => ${node.outerXml} \n\n');
+            node.children.forEach((child) => logChildren(child, level + 1));
+          }
+        }
+
+        logChildren(parser.root, 0);
+
+        print('\n\n------------\n\n');
 
         return EmbeddedSvg(
           children,
