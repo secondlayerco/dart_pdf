@@ -202,7 +202,7 @@ class EmbeddedSvg extends SvgOperation {
     canvas
       ..saveContext()
       ..setTransform(Matrix4.identity()
-        ..scale(sx, -sy)
+        ..scale(sx, sy, 1)
         ..translate(x, y));
 
     for (final child in children) {
