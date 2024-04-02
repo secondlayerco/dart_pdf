@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.0.1-napkin
+
+- pull changes from DavBfr/dart_pdf
+
 ## 3.11.0
 
 - Save in an isolate when available
