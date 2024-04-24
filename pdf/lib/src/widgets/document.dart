@@ -124,13 +124,21 @@ class Document {
     _pages.add(page);
   }
 
-  Future<Uint8List> save() async {
+  Future<Uint8List> save({bool verbose = false}) async {
     if (!_paint) {
       for (final page in _pages) {
-        page.postProcess(this);
+        if (verbose) {
+          print('Generating page ${page.hashCode} (${_pages.indexOf(page) + 1} of ${_pages.length}) [${DateTime.now().toIso8601String()}]');
+        }
+
+        page.postProcess(this, verbose: verbose);
       }
       _paint = true;
+
+      if (verbose) {
+        print('Completed pages processing [${DateTime.now().toIso8601String()}]');
+      }
     }
-    return await document.save();
+    return await document.save(verbose: verbose);
   }
 }

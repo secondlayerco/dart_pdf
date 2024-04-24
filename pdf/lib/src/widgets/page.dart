@@ -112,7 +112,7 @@ class Page {
     }
   }
 
-  void postProcess(Document document) {
+  void postProcess(Document document, {bool verbose = false}) {
     final canvas = _pdfPage!.getGraphics();
     canvas.reset();
     final _margin = resolvedMargin;
@@ -139,6 +139,10 @@ class Page {
     Widget? content;
     Widget? foreground;
 
+    if (verbose) {
+      print('Processing page $hashCode [${DateTime.now().toIso8601String()}]');
+    }
+
     content = _build(context);
 
     final size = layout(content, context, constraints);
@@ -156,11 +160,19 @@ class Page {
     }
 
     if (pageTheme.buildBackground != null) {
+      if (verbose) {
+        print('Building background $hashCode [${DateTime.now().toIso8601String()}]');
+      }
+
       background = pageTheme.buildBackground!(context);
       layout(background, context, constraints);
     }
 
     if (pageTheme.buildForeground != null) {
+      if (verbose) {
+        print('Building foreground $hashCode [${DateTime.now().toIso8601String()}]');
+      }
+
       foreground = pageTheme.buildForeground!(context);
       layout(foreground, context, constraints);
     }
@@ -173,13 +185,29 @@ class Page {
     }());
 
     if (background != null) {
+      if (verbose) {
+        print('Rendering background $hashCode [${DateTime.now().toIso8601String()}]');
+      }
+
       paint(background, context);
+    }
+
+    if (verbose) {
+      print('Rendering content $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     paint(content, context);
 
     if (foreground != null) {
+      if (verbose) {
+        print('Rendering foreground $hashCode [${DateTime.now().toIso8601String()}]');
+      }
+
       paint(foreground, context);
+    }
+
+    if (verbose) {
+      print('Completed page generation $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 
