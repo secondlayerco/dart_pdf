@@ -80,7 +80,7 @@ class _BarcodeWidget extends Widget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final textList = <BarcodeText>[];
 

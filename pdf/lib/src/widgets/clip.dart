@@ -33,7 +33,7 @@ class ClipRect extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (child != null) {
       final mat = Matrix4.identity();
@@ -43,7 +43,7 @@ class ClipRect extends SingleChildWidget {
         ..drawBox(box!)
         ..clipPath()
         ..setTransform(mat);
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -71,7 +71,7 @@ class ClipRRect extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (child != null) {
       final mat = Matrix4.identity();
@@ -82,7 +82,7 @@ class ClipRRect extends SingleChildWidget {
             verticalRadius)
         ..clipPath()
         ..setTransform(mat);
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -105,7 +105,7 @@ class ClipOval extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final rx = box!.width / 2.0;
     final ry = box!.height / 2.0;
@@ -118,7 +118,7 @@ class ClipOval extends SingleChildWidget {
         ..drawEllipse(box!.x + rx, box!.y + ry, rx, ry)
         ..clipPath()
         ..setTransform(mat);
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }

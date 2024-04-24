@@ -223,8 +223,8 @@ class GridPaper extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
     final resolvedMargin = margin.resolve(Directionality.of(context));
     context.canvas.saveContext();
     context.canvas.setGraphicState(PdfGraphicState(opacity: opacity));

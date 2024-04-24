@@ -119,7 +119,7 @@ class Image extends Widget {
       print('Painting image $hashCode (w=${image.width} h=${image.height}) [${DateTime.now().toIso8601String()}]');
     }
 
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final rect = context.localToGlobal(box!);
 
@@ -188,7 +188,7 @@ class Shape extends Widget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     context.canvas
       ..saveContext()

@@ -429,7 +429,7 @@ class FixedAxis<T extends num> extends GridAxis {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     switch (direction) {
       case Axis.horizontal:

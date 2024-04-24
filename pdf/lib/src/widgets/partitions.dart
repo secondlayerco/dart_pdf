@@ -204,7 +204,7 @@ class Partitions extends Widget with SpanningWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final mat = Matrix4.identity();
     mat.translate(box!.x, box!.y);

@@ -79,7 +79,7 @@ class PieGrid extends ChartGrid {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final datasets = Chart.of(context).datasets;
 
@@ -399,7 +399,7 @@ class PieDataSet extends Dataset {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (drawBorder) {
       _paintShape(context);

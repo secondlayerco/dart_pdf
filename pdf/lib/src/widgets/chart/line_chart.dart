@@ -156,7 +156,7 @@ class LineDataSet<T extends PointChartValue> extends PointDataSet<T> {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (data.isEmpty) {
       return;

@@ -55,7 +55,7 @@ class Placeholder extends Widget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     context.canvas
       ..setStrokeColor(color)

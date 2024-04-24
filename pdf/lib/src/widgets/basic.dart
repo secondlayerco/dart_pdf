@@ -65,8 +65,8 @@ class LimitedBox extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
   }
 }
 
@@ -115,7 +115,7 @@ class Padding extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
     final resolvedPadding = padding.resolve(Directionality.of(context));
     if (child != null) {
       final mat = Matrix4.identity();
@@ -124,7 +124,7 @@ class Padding extends SingleChildWidget {
       context.canvas
         ..saveContext()
         ..setTransform(mat);
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -276,14 +276,14 @@ class Transform extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (child != null) {
       final mat = _effectiveTransform(context);
       context.canvas
         ..saveContext()
         ..setTransform(mat);
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -416,8 +416,8 @@ class Align extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
   }
 }
 
@@ -445,8 +445,8 @@ class ConstrainedBox extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
   }
 }
 
@@ -487,7 +487,7 @@ class FittedBox extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (child != null) {
       final resolvedAlignment = alignment.resolve(Directionality.of(context));
@@ -510,7 +510,7 @@ class FittedBox extends SingleChildWidget {
         ..drawBox(box!)
         ..clipPath()
         ..setTransform(mat);
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -573,8 +573,8 @@ class AspectRatio extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
   }
 }
 
@@ -606,7 +606,7 @@ class CustomPaint extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final mat = Matrix4.identity();
     mat.translate(box!.x, box!.y);
@@ -617,7 +617,7 @@ class CustomPaint extends SingleChildWidget {
       painter!(context.canvas, box!.size);
     }
     if (child != null) {
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
     }
     if (foregroundPainter != null) {
       foregroundPainter!(context.canvas, box!.size);
@@ -767,7 +767,7 @@ class FullPage extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (child == null) {
       return;
@@ -779,7 +779,7 @@ class FullPage extends SingleChildWidget {
     context.canvas
       ..saveContext()
       ..setTransform(mat);
-    child!.paint(context);
+    child!.paint(context, verbose: verbose);
     context.canvas.restoreContext();
   }
 }
@@ -794,7 +794,7 @@ class Opacity extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (child != null) {
       final mat = Matrix4.identity();
@@ -803,7 +803,7 @@ class Opacity extends SingleChildWidget {
         ..saveContext()
         ..setTransform(mat)
         ..setGraphicState(PdfGraphicState(opacity: opacity));
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -986,7 +986,7 @@ class OverflowBox extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
   }
 }

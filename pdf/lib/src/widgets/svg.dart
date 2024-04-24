@@ -96,7 +96,7 @@ class SvgImage extends Widget {
       print('Painting svg $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final _alignment = Alignment(alignment.x, -alignment.y);
     final sourceRect = _alignment.inscribe(sizes.source!, _svgParser.viewBox);

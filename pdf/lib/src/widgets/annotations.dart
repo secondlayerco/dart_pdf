@@ -48,8 +48,8 @@ class Anchor extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
 
     final mat = context.canvas.getTransform();
     final lt = mat.transform3(Vector3(box!.left, box!.top, 0));
@@ -464,8 +464,8 @@ class Annotation extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
     builder?.build(context, box);
   }
 }

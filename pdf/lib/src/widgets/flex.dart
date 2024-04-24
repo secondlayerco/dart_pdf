@@ -590,8 +590,8 @@ class Flexible extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
   }
 }
 

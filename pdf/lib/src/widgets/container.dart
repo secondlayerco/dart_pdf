@@ -37,7 +37,7 @@ class DecoratedBox extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
     if (position == DecorationPosition.background) {
       decoration.paint(context, box!, PaintPhase.all, verbose);
     }

@@ -249,7 +249,7 @@ abstract class StatelessWidget extends Widget with SpanningWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (_child != null) {
       final mat = Matrix4.identity();
@@ -257,7 +257,7 @@ abstract class StatelessWidget extends Widget with SpanningWidget {
       context.canvas
         ..saveContext()
         ..setTransform(mat);
-      _child!.paint(context);
+      _child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -400,19 +400,19 @@ class DelayedWidget extends SingleChildWidget {
     super.layout(context, constraints);
   }
 
-  void delayedPaint(Context context) {
+  void delayedPaint(Context context, {bool verbose = false}) {
     _child = build(context);
     child!.layout(
       context,
       BoxConstraints.tight(box!.size),
       parentUsesSize: false,
     );
-    paintChild(context);
+    paintChild(context, verbose: verbose);
   }
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    delayedPaint(context);
+    delayedPaint(context, verbose: verbose);
     super.paint(context, verbose: verbose);
   }
 }
@@ -432,7 +432,7 @@ class Inseparable extends SingleChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    paintChild(context);
+    super.paint(context, verbose: verbose);
+    paintChild(context, verbose: verbose);
   }
 }

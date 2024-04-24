@@ -47,7 +47,7 @@ class CircularProgressIndicator extends Widget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final adjustedValue = value.clamp(0.00001, .99999);
     final rx = box!.width / 2;
@@ -138,7 +138,7 @@ class LinearProgressIndicator extends Widget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final vc = value.clamp(0.0, 1.0);
     final _valueColor = valueColor ?? PdfColors.blue;
