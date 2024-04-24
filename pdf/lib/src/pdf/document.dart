@@ -216,12 +216,17 @@ class PdfDocument {
   bool get hasGraphicStates => _graphicStates != null;
 
   /// This writes the document to an OutputStream.
-  Future<void> _write(PdfStream os) async {
+  Future<void> _write(PdfStream os, {bool verbose = false}) async {
     PdfSignature? signature;
 
     final xref = PdfXrefTable(lastObjectId: _objser);
 
-    for (final ob in objects.where((e) => e.inUse)) {
+    final objectsInUse = objects.where((e) => e.inUse);
+    for (final ob in objectsInUse) {
+      if (verbose) {
+        print('[dart_pdf] Preparing object ${ob.hashCode} (${objectsInUse.length} objects) [${DateTime.now().toIso8601String()}]');
+      }
+
       ob.prepare();
       if (ob is PdfInfo) {
         xref.params['/Info'] = ob.ref();
@@ -232,6 +237,10 @@ class PdfDocument {
         signature = ob;
       }
       xref.objects.add(ob);
+    }
+
+    if (verbose) {
+      print('[dart_pdf] Done preparing objects [${DateTime.now().toIso8601String()}]');
     }
 
     final id =
@@ -245,18 +254,35 @@ class PdfDocument {
     xref.output(catalog, os);
 
     if (signature != null) {
+      if (verbose) {
+        print('[dart_pdf] Writing signature [${DateTime.now().toIso8601String()}]');
+      }
+
       await signature.writeSignature(os);
+    }
+
+    if (verbose) {
+      print('[dart_pdf] Wrote objects [${DateTime.now().toIso8601String()}]');
     }
   }
 
   /// Generate the PDF document as a memory file
-  Future<Uint8List> save() async {
+  Future<Uint8List> save({bool verbose = false}) async {
+    if (verbose) {
+      print('[dart_pdf] Start saving document [${DateTime.now().toIso8601String()}]');
+    }
+
     return pdfCompute(() async {
       final os = PdfStream();
       if (prev != null) {
         os.putBytes(prev!.bytes);
       }
-      await _write(os);
+
+      if (verbose) {
+        print('[dart_pdf] Saving document with ${objects.length} objects [${DateTime.now().toIso8601String()}]');
+      }
+
+      await _write(os, verbose: verbose);
       return os.output();
     });
   }
