@@ -495,7 +495,7 @@ class Table extends Widget with SpanningWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     if (_context.lastLine == 0) {
       return;
@@ -533,7 +533,7 @@ class Table extends Widget with SpanningWidget {
           ..drawRect(
               child.box!.x, child.box!.y, child.box!.width, child.box!.height)
           ..clipPath();
-        child.paint(context);
+        child.paint(context, verbose: verbose);
         context.canvas.restoreContext();
       }
       if (index >= _context.lastLine) {

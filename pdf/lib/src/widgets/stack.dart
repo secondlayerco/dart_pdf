@@ -284,7 +284,7 @@ class Stack extends MultiChildWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final mat = Matrix4.identity();
     mat.translate(box!.x, box!.y);
@@ -297,7 +297,7 @@ class Stack extends MultiChildWidget {
         ..clipPath();
     }
     for (final child in children) {
-      child.paint(context);
+      child.paint(context, verbose: verbose);
     }
     context.canvas.restoreContext();
   }

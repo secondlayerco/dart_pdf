@@ -377,7 +377,7 @@ class Wrap extends MultiChildWidget with SpanningWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     context.canvas.saveContext();
 
@@ -386,7 +386,7 @@ class Wrap extends MultiChildWidget with SpanningWidget {
     context.canvas.setTransform(mat);
     for (var child
         in children.sublist(_context.firstChild, _context.lastChild)) {
-      child.paint(context);
+      child.paint(context, verbose: verbose);
     }
 
     context.canvas.restoreContext();

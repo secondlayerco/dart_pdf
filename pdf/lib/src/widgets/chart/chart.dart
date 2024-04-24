@@ -119,7 +119,7 @@ class Chart extends Widget implements Inherited {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(_context!);
+    super.paint(_context!, verbose: verbose);
 
     final mat = Matrix4.identity();
     mat.translate(box!.x, box!.y);
@@ -127,7 +127,7 @@ class Chart extends Widget implements Inherited {
       ..saveContext()
       ..setTransform(mat);
 
-    _child.paint(_context!);
+    _child.paint(_context!, verbose: verbose);
 
     _context!.canvas.restoreContext();
   }

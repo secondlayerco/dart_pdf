@@ -59,8 +59,8 @@ class Partition extends Widget with SpanningWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
-    child.paint(context);
+    super.paint(context, verbose: verbose);
+    child.paint(context, verbose: verbose);
   }
 
   @override
@@ -212,7 +212,7 @@ class Partitions extends Widget with SpanningWidget {
       ..saveContext()
       ..setTransform(mat);
     for (final child in children) {
-      child.paint(context);
+      child.paint(context, verbose: verbose);
     }
     context.canvas.restoreContext();
   }

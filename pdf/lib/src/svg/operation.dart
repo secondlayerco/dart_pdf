@@ -95,7 +95,7 @@ abstract class SvgOperation {
 
   final SvgPainter painter;
 
-  void paint(PdfGraphics canvas) {
+  void paint(PdfGraphics canvas, {bool verbose = false}) {
     canvas.saveContext();
     clip.apply(canvas);
     if (transform.isNotEmpty) {
@@ -110,12 +110,12 @@ abstract class SvgOperation {
     if (brush.mask != null) {
       brush.mask!.apply(canvas);
     }
-    paintShape(canvas);
+    paintShape(canvas, verbose: verbose);
     canvas.restoreContext();
   }
 
   @protected
-  void paintShape(PdfGraphics canvas);
+  void paintShape(PdfGraphics canvas, {bool verbose = false});
 
   void draw(PdfGraphics canvas) {
     canvas.saveContext();

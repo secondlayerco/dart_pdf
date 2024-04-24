@@ -126,7 +126,7 @@ class EmbeddedSvg extends SvgOperation {
   final Iterable<SvgOperation> children;
 
   @override
-  void paintShape(PdfGraphics canvas) {
+  void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     final sx = parentWidth / width;
     final sy = parentHeight / height;
 
@@ -137,7 +137,7 @@ class EmbeddedSvg extends SvgOperation {
         ..translate(x / sx, y / sy));
 
     for (final child in children) {
-      child.paint(canvas);
+      child.paint(canvas, verbose: verbose);
     }
 
     canvas.restoreContext();

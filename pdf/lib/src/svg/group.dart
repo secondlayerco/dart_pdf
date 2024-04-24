@@ -57,7 +57,7 @@ class SvgGroup extends SvgOperation {
   final Iterable<SvgOperation> children;
 
   @override
-  void paintShape(PdfGraphics canvas) {
+  void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     for (final child in children) {
       child.paint(canvas);
     }

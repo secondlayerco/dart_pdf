@@ -508,7 +508,7 @@ class Flex extends MultiChildWidget with SpanningWidget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
-    super.paint(context);
+    super.paint(context, verbose: verbose);
 
     final mat = Matrix4.identity();
     mat.translate(box!.x, box!.y);
@@ -518,7 +518,7 @@ class Flex extends MultiChildWidget with SpanningWidget {
 
     for (final child
         in children.sublist(_context.firstChild, _context.lastChild)) {
-      child.paint(context);
+      child.paint(context, verbose: verbose);
     }
     context.canvas.restoreContext();
   }
