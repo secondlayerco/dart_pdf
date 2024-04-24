@@ -124,7 +124,7 @@ class SvgImg extends SvgOperation {
     }
 
     if (verbose) {
-      print('Painting image shape $hashCode [${DateTime.now().toIso8601String()}]');
+      print('Painting image shape $hashCode (w=${image!.width} h=${image!.height}) [${DateTime.now().toIso8601String()}]');
     }
 
     final sx = width / image!.width;
