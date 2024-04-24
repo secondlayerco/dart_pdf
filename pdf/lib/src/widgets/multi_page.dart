@@ -378,7 +378,7 @@ class MultiPage extends Page {
   }
 
   @override
-  void postProcess(Document document) {
+  void postProcess(Document document, {bool verbose = false}) {
     final _margin = resolvedMargin!;
     final _mustRotate = mustRotate;
     final pageHeight = _mustRotate ? pageFormat.width : pageFormat.height;
@@ -389,12 +389,20 @@ class MultiPage extends Page {
     final availableWidth = pageWidth - pageWidthMargin;
     final isRTL = pageTheme.textDirection == TextDirection.rtl;
     for (final page in _pages) {
+      if (verbose) {
+        print('Processing page $hashCode [${DateTime.now().toIso8601String()}]');
+      }
+
       var offsetStart = pageHeight -
           (_mustRotate ? pageHeightMargin - _margin.bottom : _margin.top);
       var offsetEnd =
           _mustRotate ? pageHeightMargin - _margin.left : _margin.bottom;
 
       if (pageTheme.buildBackground != null) {
+        if (verbose) {
+          print('Building background $hashCode [${DateTime.now().toIso8601String()}]');
+        }
+
         final child = pageTheme.buildBackground!(page.context);
 
         child.layout(page.context, page.fullConstraints, parentUsesSize: false);
@@ -410,6 +418,10 @@ class MultiPage extends Page {
       var allocatedSize = 0.0;
       Widget? lastFlexChild;
       for (final widget in page.widgets) {
+        if (verbose) {
+          print('Processing widget ${widget.child.hashCode} [${DateTime.now().toIso8601String()}]');
+        }
+
         final child = widget.child;
         final flex = child is Flexible ? child.flex : 0;
         if (flex > 0) {
@@ -427,6 +439,10 @@ class MultiPage extends Page {
       }
 
       if (header != null) {
+        if (verbose) {
+          print('Building header $hashCode [${DateTime.now().toIso8601String()}]');
+        }
+
         final headerWidget = header!(page.context);
         headerWidget.layout(page.context, page.constraints,
             parentUsesSize: false);
@@ -440,6 +456,10 @@ class MultiPage extends Page {
       }
 
       if (footer != null) {
+        if (verbose) {
+          print('Building footer $hashCode [${DateTime.now().toIso8601String()}]');
+        }
+
         final footerWidget = footer!(page.context);
         footerWidget.layout(page.context, page.constraints,
             parentUsesSize: false);
@@ -496,6 +516,10 @@ class MultiPage extends Page {
       for (final widget in page.widgets) {
         final child = widget.child;
 
+        if (verbose) {
+          print('Build widget layout ${child.hashCode} [${DateTime.now().toIso8601String()}]');
+        }
+
         final flex = child is Flexible ? child.flex : 0;
         final fit = child is Flexible ? child.fit : FlexFit.loose;
         if (flex > 0) {
@@ -531,6 +555,10 @@ class MultiPage extends Page {
       }
       var pos = offsetStart - leadingSpace;
       for (final widget in page.widgets) {
+        if (verbose) {
+          print('Painting widget ${widget.child.hashCode} [${DateTime.now().toIso8601String()}]');
+        }
+
         pos -= widget.child.box!.height;
         late double x;
         switch (crossAxisAlignment) {
@@ -563,6 +591,10 @@ class MultiPage extends Page {
       }
 
       if (pageTheme.buildForeground != null) {
+        if (verbose) {
+          print('Building foreground $hashCode [${DateTime.now().toIso8601String()}]');
+        }
+
         final child = pageTheme.buildForeground!(page.context);
 
         child.layout(page.context, page.fullConstraints, parentUsesSize: false);
