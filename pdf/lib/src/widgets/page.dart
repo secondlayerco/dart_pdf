@@ -272,10 +272,10 @@ class Page {
             -pageFormat.height - _margin.left + _margin.top,
             -pageFormat.height + pageFormat.width + _margin.top - _margin.right,
           ));
-      child.paint(context);
+      child.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     } else {
-      child.paint(context);
+      child.paint(context, verbose: verbose);
     }
 
     if (pageTheme.clip) {

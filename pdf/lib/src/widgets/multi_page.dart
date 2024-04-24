@@ -186,7 +186,7 @@ class MultiPage extends Page {
   final int maxPages;
 
   void _paintChild(
-      Context context, Widget child, double x, double y, double pageHeight) {
+      Context context, Widget child, double x, double y, double pageHeight, {bool verbose = false}) {
     if (mustRotate) {
       final _margin = resolvedMargin!;
       context.canvas
@@ -199,11 +199,11 @@ class MultiPage extends Page {
               y + _margin.left - _margin.bottom,
             ),
         );
-      child.paint(context);
+      child.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     } else {
       child.box = child.box!.copyWith(x: x, y: y);
-      child.paint(context);
+      child.paint(context, verbose: verbose);
     }
   }
 
@@ -411,7 +411,7 @@ class MultiPage extends Page {
             ? _margin.left + (availableWidth - child.box!.width)
             : _margin.left;
         _paintChild(
-            page.context, child, xPos, _margin.bottom, pageFormat.height);
+            page.context, child, xPos, _margin.bottom, pageFormat.height, verbose: verbose);
       }
 
       var totalFlex = 0;
@@ -452,7 +452,7 @@ class MultiPage extends Page {
             ? _margin.left + (availableWidth - headerWidget.box!.width)
             : _margin.left;
         _paintChild(page.context, headerWidget, xPos,
-            page.offsetStart! - headerWidget.box!.height, pageFormat.height);
+            page.offsetStart! - headerWidget.box!.height, pageFormat.height, verbose: verbose);
       }
 
       if (footer != null) {
@@ -469,7 +469,7 @@ class MultiPage extends Page {
             : _margin.left;
         offsetEnd += footerWidget.box!.height;
         _paintChild(page.context, footerWidget, xPos, _margin.bottom,
-            pageFormat.height);
+            pageFormat.height, verbose: verbose);
       }
 
       final freeSpace = math.max(0.0, offsetStart - offsetEnd - allocatedSize);
@@ -586,7 +586,7 @@ class MultiPage extends Page {
           child.applyContext(widget.widgetContext!);
         }
         _paintChild(page.context, widget.child, _margin.left + x, pos,
-            pageFormat.height);
+            pageFormat.height, verbose: verbose);
         pos -= betweenSpace;
       }
 
@@ -603,7 +603,7 @@ class MultiPage extends Page {
             ? _margin.left + (availableWidth - child.box!.width)
             : _margin.left;
         _paintChild(
-            page.context, child, xPos, _margin.bottom, pageFormat.height);
+            page.context, child, xPos, _margin.bottom, pageFormat.height, verbose: verbose);
       }
     }
   }
