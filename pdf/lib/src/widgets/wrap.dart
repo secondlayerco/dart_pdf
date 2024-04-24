@@ -376,7 +376,7 @@ class Wrap extends MultiChildWidget with SpanningWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     context.canvas.saveContext();

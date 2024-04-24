@@ -58,7 +58,7 @@ class Partition extends Widget with SpanningWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     child.paint(context);
   }
@@ -203,7 +203,7 @@ class Partitions extends Widget with SpanningWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final mat = Matrix4.identity();

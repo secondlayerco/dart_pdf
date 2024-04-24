@@ -47,7 +47,7 @@ class Anchor extends SingleChildWidget {
   final PdfIndirect? replaces;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
 
@@ -463,7 +463,7 @@ class Annotation extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
     builder?.build(context, box);

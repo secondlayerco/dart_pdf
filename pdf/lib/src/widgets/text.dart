@@ -1243,7 +1243,7 @@ class RichText extends Widget with SpanningWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     TextStyle? currentStyle;
     PdfColor? currentColor;

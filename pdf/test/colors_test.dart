@@ -121,7 +121,7 @@ class ColorWheel extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final centerX = box!.width / 2;

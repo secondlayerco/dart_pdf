@@ -118,7 +118,7 @@ class Chart extends Widget implements Inherited {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(_context!);
 
     final mat = Matrix4.identity();

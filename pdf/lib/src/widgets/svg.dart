@@ -91,7 +91,7 @@ class SvgImage extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final _alignment = Alignment(alignment.x, -alignment.y);

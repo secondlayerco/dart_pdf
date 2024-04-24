@@ -101,7 +101,7 @@ class ChoiceField extends StatelessWidget with AnnotationAppearance {
   final PdfIndirect? replaces;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     final _textStyle = Theme.of(context).defaultTextStyle.merge(textStyle);
     final pdfRect = context.localToGlobal(box!);
@@ -183,7 +183,7 @@ class Checkbox extends SingleChildWidget with AnnotationAppearance {
   final PdfIndirect? replaces;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final bf = PdfButtonField(
@@ -302,7 +302,7 @@ class FlatButton extends SingleChildWidget with AnnotationAppearance {
   final PdfIndirect? replaces;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final bf = PdfButtonField(
@@ -375,7 +375,7 @@ class TextField extends StatelessWidget with AnnotationAppearance {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final _textStyle = Theme.of(context).defaultTextStyle.merge(textStyle);
@@ -475,7 +475,7 @@ class Signature extends SingleChildWidget with AnnotationAppearance {
   final PdfIndirect? replaces;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (value != null) {

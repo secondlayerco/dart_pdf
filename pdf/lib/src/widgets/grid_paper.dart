@@ -222,7 +222,7 @@ class GridPaper extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
     final resolvedMargin = margin.resolve(Directionality.of(context));

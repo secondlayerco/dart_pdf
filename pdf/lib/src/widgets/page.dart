@@ -189,21 +189,21 @@ class Page {
         print('Rendering background $hashCode [${DateTime.now().toIso8601String()}]');
       }
 
-      paint(background, context);
+      paint(background, context, verbose: verbose);
     }
 
     if (verbose) {
       print('Rendering content $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
-    paint(content, context);
+    paint(content, context, verbose: verbose);
 
     if (foreground != null) {
       if (verbose) {
         print('Rendering foreground $hashCode [${DateTime.now().toIso8601String()}]');
       }
 
-      paint(foreground, context);
+      paint(foreground, context, verbose: verbose);
     }
 
     if (verbose) {
@@ -233,7 +233,11 @@ class Page {
   }
 
   @protected
-  void paint(Widget child, Context context) {
+  void paint(Widget child, Context context, {bool verbose = false}) {
+    if (verbose) {
+      print('Painting child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
+    }
+
     final _margin = resolvedMargin!;
     final box = PdfRect(
       _margin.left,
@@ -276,6 +280,10 @@ class Page {
 
     if (pageTheme.clip) {
       context.canvas.restoreContext();
+    }
+
+    if (verbose) {
+      print('Painted child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 }

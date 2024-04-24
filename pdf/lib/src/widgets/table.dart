@@ -494,7 +494,7 @@ class Table extends Widget with SpanningWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (_context.lastLine == 0) {

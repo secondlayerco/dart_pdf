@@ -32,7 +32,7 @@ class Circle extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final canvas = context.canvas;
@@ -77,7 +77,7 @@ class Rectangle extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final canvas = context.canvas;
@@ -128,7 +128,7 @@ class Polygon extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     // Make sure there are enough points to draw anything
@@ -188,7 +188,7 @@ class InkList extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final canvas = context.canvas;

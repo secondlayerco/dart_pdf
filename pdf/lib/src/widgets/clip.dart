@@ -32,7 +32,7 @@ class ClipRect extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (child != null) {
@@ -70,7 +70,7 @@ class ClipRRect extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (child != null) {
@@ -104,7 +104,7 @@ class ClipOval extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final rx = box!.width / 2.0;

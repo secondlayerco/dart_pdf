@@ -63,7 +63,7 @@ class RadialGrid extends ChartGrid {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final datasets = Chart.of(context).datasets;

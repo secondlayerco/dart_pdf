@@ -64,7 +64,7 @@ class LimitedBox extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }
@@ -114,7 +114,7 @@ class Padding extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     final resolvedPadding = padding.resolve(Directionality.of(context));
     if (child != null) {
@@ -275,7 +275,7 @@ class Transform extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (child != null) {
@@ -415,7 +415,7 @@ class Align extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }
@@ -444,7 +444,7 @@ class ConstrainedBox extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }
@@ -486,7 +486,7 @@ class FittedBox extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (child != null) {
@@ -572,7 +572,7 @@ class AspectRatio extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }
@@ -605,7 +605,7 @@ class CustomPaint extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final mat = Matrix4.identity();
@@ -766,7 +766,7 @@ class FullPage extends SingleChildWidget {
   void debugPaint(Context context) {}
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (child == null) {
@@ -793,7 +793,7 @@ class Opacity extends SingleChildWidget {
   final double opacity;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (child != null) {
@@ -985,7 +985,7 @@ class OverflowBox extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }

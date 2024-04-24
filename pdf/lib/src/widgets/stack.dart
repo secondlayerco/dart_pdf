@@ -98,7 +98,7 @@ class Positioned extends SingleChildWidget {
   double? get height => box?.height;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }
@@ -283,7 +283,7 @@ class Stack extends MultiChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final mat = Matrix4.identity();

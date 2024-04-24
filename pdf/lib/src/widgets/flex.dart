@@ -507,7 +507,7 @@ class Flex extends MultiChildWidget with SpanningWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final mat = Matrix4.identity();
@@ -589,7 +589,7 @@ class Flexible extends SingleChildWidget {
   final FlexFit fit;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }

@@ -97,7 +97,7 @@ class BarDataSet<T extends PointChartValue> extends PointDataSet<T> {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (data.isEmpty) {

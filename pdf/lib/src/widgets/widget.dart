@@ -209,7 +209,7 @@ abstract class Widget {
   /// Draw itself and its children, according to the calculated
   /// [box.offset]
   @mustCallSuper
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     assert(() {
       if (Document.debug) {
         debugPaint(context);
@@ -248,7 +248,7 @@ abstract class StatelessWidget extends Widget with SpanningWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     if (_child != null) {
@@ -376,7 +376,7 @@ class InheritedWidget extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     assert(_context != null);
     super.paint(_context!);
     paintChild(_context!);
@@ -411,7 +411,7 @@ class DelayedWidget extends SingleChildWidget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     delayedPaint(context);
     super.paint(context);
   }
@@ -431,7 +431,7 @@ class Inseparable extends SingleChildWidget {
   bool get hasMoreWidgets => _canSpan && super.hasMoreWidgets;
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     paintChild(context);
   }

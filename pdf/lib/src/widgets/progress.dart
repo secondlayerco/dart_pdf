@@ -46,7 +46,7 @@ class CircularProgressIndicator extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final adjustedValue = value.clamp(0.00001, .99999);
@@ -137,7 +137,7 @@ class LinearProgressIndicator extends Widget {
   }
 
   @override
-  void paint(Context context) {
+  void paint(Context context, {bool verbose = false}) {
     super.paint(context);
 
     final vc = value.clamp(0.0, 1.0);
