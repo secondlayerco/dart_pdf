@@ -310,14 +310,14 @@ abstract class SingleChildWidget extends Widget with SpanningWidget {
   }
 
   @protected
-  void paintChild(Context context) {
+  void paintChild(Context context, {bool verbose = false}) {
     if (child != null) {
       final mat = Matrix4.identity();
       mat.translate(box!.x, box!.y);
       context.canvas
         ..saveContext()
         ..setTransform(mat);
-      child!.paint(context);
+      child!.paint(context, verbose: verbose);
       context.canvas.restoreContext();
     }
   }
@@ -378,8 +378,8 @@ class InheritedWidget extends SingleChildWidget {
   @override
   void paint(Context context, {bool verbose = false}) {
     assert(_context != null);
-    super.paint(_context!);
-    paintChild(_context!);
+    super.paint(_context!, verbose: verbose);
+    paintChild(_context!, verbose: verbose);
   }
 }
 
@@ -413,7 +413,7 @@ class DelayedWidget extends SingleChildWidget {
   @override
   void paint(Context context, {bool verbose = false}) {
     delayedPaint(context);
-    super.paint(context);
+    super.paint(context, verbose: verbose);
   }
 }
 

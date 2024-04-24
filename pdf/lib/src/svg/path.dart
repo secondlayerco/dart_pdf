@@ -202,7 +202,7 @@ class SvgPath extends SvgOperation {
   final String d;
 
   @override
-  void paintShape(PdfGraphics canvas) {
+  void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     if (brush.fill!.isNotEmpty) {
       brush.fill!.setFillColor(this, canvas);
       if (brush.fillOpacity! < 1) {

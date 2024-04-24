@@ -92,6 +92,10 @@ class SvgImage extends Widget {
 
   @override
   void paint(Context context, {bool verbose = false}) {
+    if (verbose) {
+      print('Painting svg $hashCode [${DateTime.now().toIso8601String()}]');
+    }
+
     super.paint(context);
 
     final _alignment = Alignment(alignment.x, -alignment.y);
@@ -127,8 +131,12 @@ class SvgImage extends Widget {
         context.page.pageFormat.height,
       ),
     );
-    painter.paint();
+    painter.paint(verbose: verbose);
     context.canvas.restoreContext();
+
+    if (verbose) {
+      print('Painted svg $hashCode [${DateTime.now().toIso8601String()}]');
+    }
   }
 }
 
@@ -145,7 +153,7 @@ class DecorationSvgImage extends DecorationGraphic {
   final Alignment alignment;
 
   @override
-  void paint(Context context, PdfRect box) {
+  void paint(Context context, PdfRect box, {bool verbose = false}) {
     Widget.draw(
       SvgImage(svg: svg, fit: fit, alignment: alignment),
       offset: box.offset,

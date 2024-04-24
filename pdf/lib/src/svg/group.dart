@@ -59,7 +59,7 @@ class SvgGroup extends SvgOperation {
   @override
   void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     for (final child in children) {
-      child.paint(canvas);
+      child.paint(canvas, verbose: verbose);
     }
   }
 

@@ -118,9 +118,13 @@ class SvgImg extends SvgOperation {
   final PdfImage? image;
 
   @override
-  void paintShape(PdfGraphics canvas) {
+  void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     if (image == null) {
       return;
+    }
+
+    if (verbose) {
+      print('Painting image shape $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     final sx = width / image!.width;
@@ -133,6 +137,10 @@ class SvgImg extends SvgOperation {
           ..scale(sx, -sy),
       )
       ..drawImage(image!, 0, 0);
+
+    if (verbose) {
+      print('Painted image shape $hashCode [${DateTime.now().toIso8601String()}]');
+    }
   }
 
   @override

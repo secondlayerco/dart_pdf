@@ -91,7 +91,7 @@ class SvgUse extends SvgOperation {
   final SvgOperation? href;
 
   @override
-  void paintShape(PdfGraphics canvas) {
+  void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     if (x != 0 || y != 0) {
       canvas.setTransform(Matrix4.translationValues(x, y, 0));
     }

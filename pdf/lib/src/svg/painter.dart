@@ -37,13 +37,13 @@ class SvgPainter {
 
   final PdfRect boundingBox;
 
-  void paint() {
+  void paint({bool verbose = false}) {
     final brush = parser.colorFilter == null
         ? SvgBrush.defaultContext
         : SvgBrush.defaultContext
             .copyWith(fill: SvgColor(color: parser.colorFilter));
 
-    SvgGroup.fromXml(parser.root, this, brush).paint(_canvas!);
+    SvgGroup.fromXml(parser.root, this, brush).paint(_canvas!, verbose: verbose);
   }
 
   final _fontCache = <String, Font>{};

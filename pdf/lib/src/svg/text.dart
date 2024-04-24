@@ -119,7 +119,7 @@ class SvgText extends SvgOperation {
   final Iterable<SvgText> tspan;
 
   @override
-  void paintShape(PdfGraphics canvas) {
+  void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     canvas
       ..saveContext()
       ..setTransform(Matrix4.identity()

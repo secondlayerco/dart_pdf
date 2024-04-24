@@ -28,7 +28,7 @@ enum DecorationPosition { background, foreground }
 abstract class DecorationGraphic {
   const DecorationGraphic();
 
-  void paint(Context context, PdfRect box);
+  void paint(Context context, PdfRect box, {bool verbose = false});
 }
 
 @immutable
@@ -46,7 +46,11 @@ class DecorationImage extends DecorationGraphic {
   final double? dpi;
 
   @override
-  void paint(Context context, PdfRect box) {
+  void paint(Context context, PdfRect box, {bool verbose = false}) {
+    if (verbose) {
+      print('Painting DecorationImage $hashCode [${DateTime.now().toIso8601String()}]');
+    }
+
     final _image = image.resolve(context, box.size, dpi: dpi);
 
     final imageSize =
@@ -69,6 +73,10 @@ class DecorationImage extends DecorationGraphic {
       ..setTransform(mat)
       ..drawImage(_image, 0, 0, imageSize.x, imageSize.y)
       ..restoreContext();
+
+    if (verbose) {
+      print('Painted DecorationImage $hashCode [${DateTime.now().toIso8601String()}]');
+    }
   }
 }
 
@@ -276,6 +284,7 @@ class BoxDecoration {
     Context context,
     PdfRect box, [
     PaintPhase phase = PaintPhase.all,
+    bool verbose = false,
   ]) {
     final resolvedBorderRadius =
         borderRadius?.resolve(Directionality.of(context));
@@ -370,7 +379,7 @@ class BoxDecoration {
             }
             break;
         }
-        image!.paint(context, box);
+        image!.paint(context, box, verbose: verbose);
         context.canvas.restoreContext();
       }
     }

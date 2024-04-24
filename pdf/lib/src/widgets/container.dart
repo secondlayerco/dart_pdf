@@ -39,11 +39,11 @@ class DecoratedBox extends SingleChildWidget {
   void paint(Context context, {bool verbose = false}) {
     super.paint(context);
     if (position == DecorationPosition.background) {
-      decoration.paint(context, box!);
+      decoration.paint(context, box!, PaintPhase.all, verbose);
     }
-    paintChild(context);
+    paintChild(context, verbose: verbose);
     if (position == DecorationPosition.foreground) {
-      decoration.paint(context, box!);
+      decoration.paint(context, box!, PaintPhase.all, verbose);
     }
   }
 }
