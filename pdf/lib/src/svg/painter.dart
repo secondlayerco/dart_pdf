@@ -38,12 +38,20 @@ class SvgPainter {
   final PdfRect boundingBox;
 
   void paint({bool verbose = false}) {
+    if (verbose) {
+      print('Painting from SvgPainter $hashCode [${DateTime.now().toIso8601String()}]');
+    }
+
     final brush = parser.colorFilter == null
         ? SvgBrush.defaultContext
         : SvgBrush.defaultContext
             .copyWith(fill: SvgColor(color: parser.colorFilter));
 
     SvgGroup.fromXml(parser.root, this, brush).paint(_canvas!, verbose: verbose);
+
+    if (verbose) {
+      print('Painted from SvgPainter $hashCode done [${DateTime.now().toIso8601String()}]');
+    }
   }
 
   final _fontCache = <String, Font>{};

@@ -127,6 +127,10 @@ class EmbeddedSvg extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas, {bool verbose = false}) {
+    if (verbose) {
+      print('Painting from EmbeddedSvg $hashCode [${DateTime.now().toIso8601String()}]');
+    }
+
     final sx = parentWidth / width;
     final sy = parentHeight / height;
 
@@ -141,6 +145,10 @@ class EmbeddedSvg extends SvgOperation {
     }
 
     canvas.restoreContext();
+
+    if (verbose) {
+      print('Painted from EmbeddedSvg $hashCode [${DateTime.now().toIso8601String()}]');
+    }
   }
 
   @override

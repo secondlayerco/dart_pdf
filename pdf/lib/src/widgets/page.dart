@@ -235,7 +235,7 @@ class Page {
   @protected
   void paint(Widget child, Context context, {bool verbose = false}) {
     if (verbose) {
-      print('Painting child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[Page] Painting child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     final _margin = resolvedMargin!;
@@ -283,7 +283,7 @@ class Page {
     }
 
     if (verbose) {
-      print('Painted child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[Page] Painted child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 }

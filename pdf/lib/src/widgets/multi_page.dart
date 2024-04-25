@@ -187,6 +187,11 @@ class MultiPage extends Page {
 
   void _paintChild(
       Context context, Widget child, double x, double y, double pageHeight, {bool verbose = false}) {
+
+    if (verbose) {
+      print('[MultiPage] Painting widget ${child.hashCode} at $x, $y [${DateTime.now().toIso8601String()}]');
+    }
+
     if (mustRotate) {
       final _margin = resolvedMargin!;
       context.canvas
@@ -204,6 +209,10 @@ class MultiPage extends Page {
     } else {
       child.box = child.box!.copyWith(x: x, y: y);
       child.paint(context, verbose: verbose);
+    }
+
+    if (verbose) {
+      print('[MultiPage] Painted widget ${child.hashCode} at $x, $y [${DateTime.now().toIso8601String()}]');
     }
   }
 

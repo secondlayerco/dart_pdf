@@ -96,6 +96,10 @@ abstract class SvgOperation {
   final SvgPainter painter;
 
   void paint(PdfGraphics canvas, {bool verbose = false}) {
+    if (verbose) {
+      print('Painting from SvgOperation $hashCode [${DateTime.now().toIso8601String()}]');
+    }
+
     canvas.saveContext();
     clip.apply(canvas);
     if (transform.isNotEmpty) {
@@ -112,6 +116,10 @@ abstract class SvgOperation {
     }
     paintShape(canvas, verbose: verbose);
     canvas.restoreContext();
+
+    if (verbose) {
+      print('Painted from SvgOperation $hashCode [${DateTime.now().toIso8601String()}]');
+    }
   }
 
   @protected
