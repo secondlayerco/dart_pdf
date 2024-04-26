@@ -48,7 +48,7 @@ class DecorationImage extends DecorationGraphic {
   @override
   void paint(Context context, PdfRect box, {bool verbose = false}) {
     if (verbose) {
-      print('Painting DecorationImage $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting DecorationImage $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     final _image = image.resolve(context, box.size, dpi: dpi);
@@ -75,7 +75,7 @@ class DecorationImage extends DecorationGraphic {
       ..restoreContext();
 
     if (verbose) {
-      print('Painted DecorationImage $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted DecorationImage $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 }

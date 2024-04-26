@@ -124,7 +124,7 @@ class SvgImg extends SvgOperation {
     }
 
     if (verbose) {
-      print('Painting image shape $hashCode (w=${image!.width} h=${image!.height}) [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting image shape $hashCode (w=${image!.width} h=${image!.height}) [${DateTime.now().toIso8601String()}]');
     }
 
     final sx = width / image!.width;
@@ -139,7 +139,7 @@ class SvgImg extends SvgOperation {
       ..drawImage(image!, 0, 0);
 
     if (verbose) {
-      print('Painted image shape $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted image shape $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 

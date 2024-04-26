@@ -93,7 +93,7 @@ class SvgImage extends Widget {
   @override
   void paint(Context context, {bool verbose = false}) {
     if (verbose) {
-      print('Painting svg $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting svg $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     super.paint(context, verbose: verbose);
@@ -135,7 +135,7 @@ class SvgImage extends Widget {
     context.canvas.restoreContext();
 
     if (verbose) {
-      print('Painted svg $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted svg $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 }

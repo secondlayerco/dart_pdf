@@ -128,7 +128,7 @@ class Document {
     if (!_paint) {
       for (final page in _pages) {
         if (verbose) {
-          print('Generating page ${page.hashCode} (${_pages.indexOf(page) + 1} of ${_pages.length}) [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Generating page ${page.hashCode} (${_pages.indexOf(page) + 1} of ${_pages.length}) [${DateTime.now().toIso8601String()}]');
         }
 
         page.postProcess(this, verbose: verbose);
@@ -136,7 +136,7 @@ class Document {
       _paint = true;
 
       if (verbose) {
-        print('Completed pages processing [${DateTime.now().toIso8601String()}]');
+        print('[dart_pdf] Completed pages processing [${DateTime.now().toIso8601String()}]');
       }
     }
     return await document.save(verbose: verbose);

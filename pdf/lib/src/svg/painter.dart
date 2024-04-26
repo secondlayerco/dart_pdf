@@ -39,7 +39,7 @@ class SvgPainter {
 
   void paint({bool verbose = false}) {
     if (verbose) {
-      print('Painting from SvgPainter $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting from SvgPainter $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     final brush = parser.colorFilter == null
@@ -50,7 +50,7 @@ class SvgPainter {
     SvgGroup.fromXml(parser.root, this, brush).paint(_canvas!, verbose: verbose);
 
     if (verbose) {
-      print('Painted from SvgPainter $hashCode done [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted from SvgPainter $hashCode done [${DateTime.now().toIso8601String()}]');
     }
   }
 

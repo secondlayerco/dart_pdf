@@ -80,7 +80,7 @@ abstract class SvgOperation {
           return SvgUse.fromXml(element, painter, brush);
       }
     } catch (e, s) {
-      print('[pdf][SvgOperation.fromXml] Error parsing SVG element: ${e}\n${s}');
+      print('[dart_pdf] [SvgOperation.fromXml] Error parsing SVG element: ${e}\n${s}');
       return null;
     }
 
@@ -97,7 +97,7 @@ abstract class SvgOperation {
 
   void paint(PdfGraphics canvas, {bool verbose = false}) {
     if (verbose) {
-      print('Painting from SvgOperation $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting from SvgOperation $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     canvas.saveContext();
@@ -118,7 +118,7 @@ abstract class SvgOperation {
     canvas.restoreContext();
 
     if (verbose) {
-      print('Painted from SvgOperation $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted from SvgOperation $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 

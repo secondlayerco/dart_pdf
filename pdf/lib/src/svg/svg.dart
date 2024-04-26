@@ -128,7 +128,7 @@ class EmbeddedSvg extends SvgOperation {
   @override
   void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     if (verbose) {
-      print('Painting from EmbeddedSvg $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting from EmbeddedSvg $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     final sx = parentWidth / width;
@@ -147,7 +147,7 @@ class EmbeddedSvg extends SvgOperation {
     canvas.restoreContext();
 
     if (verbose) {
-      print('Painted from EmbeddedSvg $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted from EmbeddedSvg $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 

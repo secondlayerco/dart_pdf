@@ -116,7 +116,7 @@ class Image extends Widget {
   @override
   void paint(Context context, {bool verbose = false}) {
     if (verbose) {
-      print('Painting image $hashCode (w=${image.width} h=${image.height}) [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting image $hashCode (w=${image.width} h=${image.height}) [${DateTime.now().toIso8601String()}]');
     }
 
     super.paint(context, verbose: verbose);
@@ -132,7 +132,7 @@ class Image extends Widget {
     );
 
     if (verbose) {
-      print('Painted image $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted image $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 }

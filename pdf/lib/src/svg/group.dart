@@ -59,15 +59,21 @@ class SvgGroup extends SvgOperation {
   @override
   void paintShape(PdfGraphics canvas, {bool verbose = false}) {
     if (verbose) {
-      print('Painting from SvgGroup $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painting from SvgGroup $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     for (final child in children) {
+      if (verbose) {
+        print('[dart_pdf] Painting child ${child.hashCode} from SvgGroup $hashCode [${DateTime.now().toIso8601String()}]');
+      }
       child.paint(canvas, verbose: verbose);
+      if (verbose) {
+        print('[dart_pdf] Painted child ${child.hashCode} from SvgGroup $hashCode [${DateTime.now().toIso8601String()}]');
+      }
     }
 
     if (verbose) {
-      print('Painted from SvgGroup $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Painted from SvgGroup $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 

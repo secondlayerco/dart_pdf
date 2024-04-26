@@ -189,7 +189,7 @@ class MultiPage extends Page {
       Context context, Widget child, double x, double y, double pageHeight, {bool verbose = false}) {
 
     if (verbose) {
-      print('[MultiPage] Painting widget ${child.hashCode} at $x, $y [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] [MultiPage] Painting widget ${child.hashCode} at $x, $y [${DateTime.now().toIso8601String()}]');
     }
 
     if (mustRotate) {
@@ -212,7 +212,7 @@ class MultiPage extends Page {
     }
 
     if (verbose) {
-      print('[MultiPage] Painted widget ${child.hashCode} at $x, $y [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] [MultiPage] Painted widget ${child.hashCode} at $x, $y [${DateTime.now().toIso8601String()}]');
     }
   }
 
@@ -399,7 +399,7 @@ class MultiPage extends Page {
     final isRTL = pageTheme.textDirection == TextDirection.rtl;
     for (final page in _pages) {
       if (verbose) {
-        print('Processing page $hashCode [${DateTime.now().toIso8601String()}]');
+        print('[dart_pdf] Processing page $hashCode [${DateTime.now().toIso8601String()}]');
       }
 
       var offsetStart = pageHeight -
@@ -409,7 +409,7 @@ class MultiPage extends Page {
 
       if (pageTheme.buildBackground != null) {
         if (verbose) {
-          print('Building background $hashCode [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Building background $hashCode [${DateTime.now().toIso8601String()}]');
         }
 
         final child = pageTheme.buildBackground!(page.context);
@@ -428,7 +428,7 @@ class MultiPage extends Page {
       Widget? lastFlexChild;
       for (final widget in page.widgets) {
         if (verbose) {
-          print('Processing widget ${widget.child.hashCode} [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Processing widget ${widget.child.hashCode} [${DateTime.now().toIso8601String()}]');
         }
 
         final child = widget.child;
@@ -449,7 +449,7 @@ class MultiPage extends Page {
 
       if (header != null) {
         if (verbose) {
-          print('Building header $hashCode [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Building header $hashCode [${DateTime.now().toIso8601String()}]');
         }
 
         final headerWidget = header!(page.context);
@@ -466,7 +466,7 @@ class MultiPage extends Page {
 
       if (footer != null) {
         if (verbose) {
-          print('Building footer $hashCode [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Building footer $hashCode [${DateTime.now().toIso8601String()}]');
         }
 
         final footerWidget = footer!(page.context);
@@ -526,7 +526,7 @@ class MultiPage extends Page {
         final child = widget.child;
 
         if (verbose) {
-          print('Build widget layout ${child.hashCode} [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Build widget layout ${child.hashCode} [${DateTime.now().toIso8601String()}]');
         }
 
         final flex = child is Flexible ? child.flex : 0;
@@ -565,7 +565,7 @@ class MultiPage extends Page {
       var pos = offsetStart - leadingSpace;
       for (final widget in page.widgets) {
         if (verbose) {
-          print('Painting widget ${widget.child.hashCode} [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Painting widget ${widget.child.hashCode} [${DateTime.now().toIso8601String()}]');
         }
 
         pos -= widget.child.box!.height;
@@ -601,7 +601,7 @@ class MultiPage extends Page {
 
       if (pageTheme.buildForeground != null) {
         if (verbose) {
-          print('Building foreground $hashCode [${DateTime.now().toIso8601String()}]');
+          print('[dart_pdf] Building foreground $hashCode [${DateTime.now().toIso8601String()}]');
         }
 
         final child = pageTheme.buildForeground!(page.context);

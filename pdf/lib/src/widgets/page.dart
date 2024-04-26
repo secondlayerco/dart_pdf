@@ -140,7 +140,7 @@ class Page {
     Widget? foreground;
 
     if (verbose) {
-      print('Processing page $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Processing page $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     content = _build(context);
@@ -161,7 +161,7 @@ class Page {
 
     if (pageTheme.buildBackground != null) {
       if (verbose) {
-        print('Building background $hashCode [${DateTime.now().toIso8601String()}]');
+        print('[dart_pdf] Building background $hashCode [${DateTime.now().toIso8601String()}]');
       }
 
       background = pageTheme.buildBackground!(context);
@@ -170,7 +170,7 @@ class Page {
 
     if (pageTheme.buildForeground != null) {
       if (verbose) {
-        print('Building foreground $hashCode [${DateTime.now().toIso8601String()}]');
+        print('[dart_pdf] Building foreground $hashCode [${DateTime.now().toIso8601String()}]');
       }
 
       foreground = pageTheme.buildForeground!(context);
@@ -186,28 +186,28 @@ class Page {
 
     if (background != null) {
       if (verbose) {
-        print('Rendering background $hashCode [${DateTime.now().toIso8601String()}]');
+        print('[dart_pdf] Rendering background $hashCode [${DateTime.now().toIso8601String()}]');
       }
 
       paint(background, context, verbose: verbose);
     }
 
     if (verbose) {
-      print('Rendering content $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Rendering content $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     paint(content, context, verbose: verbose);
 
     if (foreground != null) {
       if (verbose) {
-        print('Rendering foreground $hashCode [${DateTime.now().toIso8601String()}]');
+        print('[dart_pdf] Rendering foreground $hashCode [${DateTime.now().toIso8601String()}]');
       }
 
       paint(foreground, context, verbose: verbose);
     }
 
     if (verbose) {
-      print('Completed page generation $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] Completed page generation $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 
@@ -235,7 +235,7 @@ class Page {
   @protected
   void paint(Widget child, Context context, {bool verbose = false}) {
     if (verbose) {
-      print('[Page] Painting child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] [Page] Painting child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
     }
 
     final _margin = resolvedMargin!;
@@ -283,7 +283,7 @@ class Page {
     }
 
     if (verbose) {
-      print('[Page] Painted child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
+      print('[dart_pdf] [Page] Painted child ${child.hashCode} $hashCode [${DateTime.now().toIso8601String()}]');
     }
   }
 }
