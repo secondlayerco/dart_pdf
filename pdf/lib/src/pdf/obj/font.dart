@@ -39,7 +39,6 @@ abstract class PdfFont extends PdfObject<PdfDict> {
           }),
         ) {
     pdfDocument.fonts.add(this);
-    print('>> Added font $this');
   }
 
   /// Monospaced slab serif typeface.
