@@ -136,6 +136,8 @@ class SvgText extends SvgOperation {
         ..scale(1.0, -1.0)
         ..translate(x, -y!));
 
+    print('>> painter.allTtfFonts(): ${painter.allTtfFonts()}');
+
     final fontSpans = _createFontSpans(text, font, painter.allTtfFonts(),
         fontSize: brush.fontSize!.sizeValue, letterSpacing: null);
 
@@ -222,7 +224,8 @@ class RunesAndFont {
   final PdfFont font;
 
   @override
-  String toString() => '(`${String.fromCharCodes(runes)}` ($runes) ${font.fontName})';
+  String toString() =>
+      '(`${String.fromCharCodes(runes)}` ($runes) ${font.fontName})';
 
   void append(RunesAndFont other) {
     assert(isCompatible(other));
