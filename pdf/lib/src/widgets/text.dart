@@ -886,6 +886,8 @@ class RichText extends Widget with SpanningWidget {
     }
     return true;
   }, defaultStyle, null);
+
+  print('[ERWAN] preProcessSpans: ${spans.length}');
   return spans;
 }
 
