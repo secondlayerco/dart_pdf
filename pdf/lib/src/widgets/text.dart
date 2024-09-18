@@ -778,89 +778,74 @@ class RichText extends Widget with SpanningWidget {
   final theme = Theme.of(context);
   final defaultStyle = theme.defaultTextStyle;
   final spans = <InlineSpan>[];
+
   text.visitChildren((
     InlineSpan span,
     TextStyle? style,
     AnnotationBuilder? annotation,
   ) {
-    if (span is! TextSpan) {
+    if (span is! TextSpan || span.text == null) {
       spans.add(span.copyWith(style: style, annotation: annotation));
       return true;
     }
-    if (span.text == null) {
-      return true;
-    }
-    final font = style!.font!.getFont(context);
-    var text = span.text!.runes.toList();
-    List<int> currentRun = [];
-    TextStyle? currentFallbackStyle;
 
+    final baseFont = style!.font!.getFont(context);
+    var accumulatedRunes = <int>[];
+    var currentFont = baseFont;
+    var currentTextStyle = style;
+
+    void flushAccumulatedRunes() {
+      if (accumulatedRunes.isNotEmpty) {
+        spans.add(_addText(
+          text: accumulatedRunes,
+          style: currentTextStyle,
+          baseline: span.baseline,
+          annotation: annotation,
+        ));
+        accumulatedRunes.clear();
+      }
+    }
+
+    var text = span.text!.runes.toList();
     for (var index = 0; index < text.length; index++) {
       final rune = text[index];
       const spaces = {
-        0x0a, 0x09, 0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004,
+        0x0a, 0x09, 0x00A0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, //
         0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000
       };
+
       if (spaces.contains(rune)) {
-        if (currentRun.isNotEmpty) {
-          _addCurrentRun(spans, currentRun, currentFallbackStyle ?? style, span.baseline, annotation);
-          currentRun = [];
-          currentFallbackStyle = null;
-        }
+        accumulatedRunes.add(rune);
         continue;
       }
-      if (!font.isRuneSupported(rune)) {
-        if (currentRun.isNotEmpty && currentFallbackStyle == null) {
-          _addCurrentRun(spans, currentRun, style, span.baseline, annotation);
-          currentRun = [];
-        }
+
+      // Check if the current font supports the rune
+      if (!currentFont.isRuneSupported(rune)) {
         var found = false;
-        for (final fb in style.fontFallback) {
-          final fallbackFont = fb.getFont(context);
+        for (final fallback in style.fontFallback) {
+          final fallbackFont = fallback.getFont(context);
+
           if (fallbackFont.isRuneSupported(rune)) {
-            if (fallbackFont is PdfTtfFont) {
-              final bitmap = fallbackFont.font.getBitmap(rune);
-              if (bitmap != null) {
-                if (currentRun.isNotEmpty) {
-                  _addCurrentRun(spans, currentRun, currentFallbackStyle ?? style, span.baseline, annotation);
-                }
-                spans.add(_addEmoji(
-                  bitmap: bitmap,
-                  style: style,
-                  baseline: span.baseline,
-                  annotation: annotation,
-                ));
-                currentRun = [];
-                currentFallbackStyle = null;
-                found = true;
-                break;
-              }
+            // Check if the font has changed; only flush if the font is different
+            if (currentFont != fallbackFont) {
+              flushAccumulatedRunes();
+              currentFont = fallbackFont;
+              currentTextStyle = style.copyWith(
+                font: fallback,
+                fontNormal: fallback,
+                fontBold: fallback,
+                fontBoldItalic: fallback,
+                fontItalic: fallback,
+              );
             }
-            TextStyle newFallbackStyle = style.copyWith(
-              font: fb,
-              fontNormal: fb,
-              fontBold: fb,
-              fontBoldItalic: fb,
-              fontItalic: fb,
-            );
-            if (currentFallbackStyle != newFallbackStyle) {
-              if (currentRun.isNotEmpty) {
-                _addCurrentRun(spans, currentRun, currentFallbackStyle ?? style, span.baseline, annotation);
-                currentRun = [];
-              }
-              currentFallbackStyle = newFallbackStyle;
-            }
-            currentRun.add(rune);
+            accumulatedRunes.add(rune);
             found = true;
             break;
           }
         }
+
         if (!found) {
-          if (currentRun.isNotEmpty) {
-            _addCurrentRun(spans, currentRun, currentFallbackStyle ?? style, span.baseline, annotation);
-            currentRun = [];
-            currentFallbackStyle = null;
-          }
+          flushAccumulatedRunes();  // Flush before adding placeholder
           spans.add(_addPlaceholder(
             style: style,
             baseline: span.baseline,
@@ -873,32 +858,21 @@ class RichText extends Widget with SpanningWidget {
           }());
         }
       } else {
-        if (currentFallbackStyle != null) {
-          _addCurrentRun(spans, currentRun, currentFallbackStyle, span.baseline, annotation);
-          currentRun = [];
-          currentFallbackStyle = null;
-        }
-        currentRun.add(rune);
+        accumulatedRunes.add(rune);  // Accumulate runes supported by current font
       }
     }
-    if (currentRun.isNotEmpty) {
-      _addCurrentRun(spans, currentRun, currentFallbackStyle ?? style, span.baseline, annotation);
-    }
+
+    // Flush any remaining runes
+    flushAccumulatedRunes();
+
     return true;
   }, defaultStyle, null);
 
-  print('[ERWAN] preProcessSpans: ${spans.length}');
+  print('[ERWAN] spans length: ${spans.length}');
+
   return spans;
 }
 
-void _addCurrentRun(List<InlineSpan> spans, List<int> run, TextStyle style, double baseline, AnnotationBuilder? annotation) {
-  spans.add(_addText(
-    text: run,
-    style: style,
-    baseline: baseline,
-    annotation: annotation,
-  ));
-}
 
   /// Check available characters in the fonts
   /// use fallback if needed and replace emojis
