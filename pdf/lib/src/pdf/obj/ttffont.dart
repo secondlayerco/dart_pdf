@@ -91,14 +91,15 @@ class PdfTtfFont extends PdfFont {
       return PdfFontMetrics.zero;
     }
 
-    print('[ERWAN] useBidi: $useBidi (${bidi.isArabicDiacriticValue(charCode)}), useArabic: $useArabic ${arabic.isArabicDiacriticValue(charCode)}');
+    print('[ERWAN] [${charCode}] useBidi: $useBidi (${bidi.isArabicDiacriticValue(charCode)}), useArabic: $useArabic ${arabic.isArabicDiacriticValue(charCode)}');
 
     if (useBidi && bidi.isArabicDiacriticValue(charCode)) {
       final metric = font.glyphInfoMap[g] ?? PdfFontMetrics.zero;
       return metric.copyWith(advanceWidth: 0);
     }
 
-    if (useArabic && arabic.isArabicDiacriticValue(charCode)) {
+    // if (useArabic && arabic.isArabicDiacriticValue(charCode)) {
+    if (useArabic) {
       final metric = font.glyphInfoMap[g] ?? PdfFontMetrics.zero;
       return metric.copyWith(advanceWidth: 0);
     }
