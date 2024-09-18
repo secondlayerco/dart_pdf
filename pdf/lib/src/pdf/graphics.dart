@@ -988,7 +988,12 @@ class PdfGraphics {
   /// Draw an SVG path
   void drawShape(String d) {
     final proxy = _PathProxy(this);
-    writeSvgPathDataToPath(d, proxy);
+    print('[ERWAN] d=${d}');
+    try {
+      writeSvgPathDataToPath(d, proxy);
+    } catch (e) {
+      print('[ERWAN] error=${e}');
+    }
   }
 
   /// Calculates the bounding box of an SVG path
