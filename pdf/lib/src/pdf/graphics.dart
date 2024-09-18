@@ -988,6 +988,7 @@ class PdfGraphics {
   /// Draw an SVG path
   void drawShape(String d) {
     final proxy = _PathProxy(this);
+    print('[ERWAN] d=${d}');
     writeSvgPathDataToPath(d, proxy);
   }
 
