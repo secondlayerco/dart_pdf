@@ -913,6 +913,11 @@ class RichText extends Widget with SpanningWidget {
     var spanStart = 0;
     var overflow = false;
 
+    text.visitChildren((span, parentStyle, annotation) {
+      print('[ERWAN] span: ${span.toPlainText()}');
+      return true;
+    }, null, null);
+
     _preprocessed ??= _preProcessSpans(context);
 
     void _buildLines() {
