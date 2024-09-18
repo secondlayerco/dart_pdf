@@ -992,7 +992,8 @@ class PdfGraphics {
     try {
       writeSvgPathDataToPath(d, proxy);
     } catch (e) {
-      print('[ERWAN] error=${e}');
+      print('[ERWAN] error2=${e}');
+      rethrow;
     }
   }
 
