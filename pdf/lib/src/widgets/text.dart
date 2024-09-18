@@ -930,6 +930,8 @@ class RichText extends Widget with SpanningWidget {
           final space =
               font.stringMetrics(' ') * (style.fontSize! * textScaleFactor);
 
+          print('[ERWAN] rtl: ${_textDirection == TextDirection.rtl} => ${span.text!} vs ${arabic.convert(span.text!)} vs ${bidi.logicalToVisual(span.text!)}');
+
           final spanLines = (useArabic && _textDirection == TextDirection.rtl
                   ? arabic.convert(span.text!)
                   : useBidi && _textDirection == TextDirection.rtl
