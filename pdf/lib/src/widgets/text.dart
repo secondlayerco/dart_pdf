@@ -810,6 +810,8 @@ class RichText extends Widget with SpanningWidget {
           continue;
         }
 
+        continue;
+
         if (!font.isRuneSupported(rune)) {
           if (index > 0) {
             spans.add(_addText(
