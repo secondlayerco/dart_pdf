@@ -1,6 +1,6 @@
 /// Whether to use the Bidi algorithm to detect RTL text.
-const bool useBidi = bool.fromEnvironment('use_bidi', defaultValue: true);
+// const bool useBidi = bool.fromEnvironment('use_bidi', defaultValue: true);
+const bool useBidi = false;
 
 /// Whether to use the Arabic algorithm.
-const bool useArabic =
-    bool.fromEnvironment('use_arabic', defaultValue: !useBidi);
+const bool useArabic = true;
