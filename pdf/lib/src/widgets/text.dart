@@ -798,6 +798,8 @@ class RichText extends Widget with SpanningWidget {
 
       var text = span.text!.runes.toList();
 
+      print('[ERWAN] text: ${span.text}');
+
       for (var index = 0; index < text.length; index++) {
         final rune = text[index];
         const spaces = {
