@@ -126,6 +126,7 @@ class PdfGraphicState {
 
     if (blendMode != null) {
       final bm = blendMode.toString();
+      print('[ERWAN] BM: $bm => ${bm.substring(13, 14).toUpperCase()}${bm.substring(14)}');
       params['/BM'] =
           PdfName('/${bm.substring(13, 14).toUpperCase()}${bm.substring(14)}');
     }

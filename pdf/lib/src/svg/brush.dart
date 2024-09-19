@@ -64,6 +64,7 @@ class SvgBrush {
     final strokeLineCap = element.getAttribute('stroke-linecap');
     final strokeLineJoin = element.getAttribute('stroke-linejoin');
     final blendMode = element.getAttribute('mix-blend-mode');
+    print('[ERWAN] blendMode: $blendMode');
 
     final result = parent.merge(SvgBrush(
       opacity: SvgParser.getDouble(element, 'opacity', defaultValue: null),

@@ -106,6 +106,7 @@ abstract class SvgOperation {
         opacity: brush.opacity == 1 ? null : brush.opacity,
         blendMode: brush.blendMode,
       ));
+      print('[ERWAN] blendMode: ${brush.blendMode}');
     }
     if (brush.mask != null) {
       brush.mask!.apply(canvas);
