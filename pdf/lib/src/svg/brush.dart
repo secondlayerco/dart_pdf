@@ -63,7 +63,7 @@ class SvgBrush {
     final fillRule = element.getAttribute('fill-rule');
     final strokeLineCap = element.getAttribute('stroke-linecap');
     final strokeLineJoin = element.getAttribute('stroke-linejoin');
-    final blendMode = element.getAttribute('mix-blend-mode');
+    final blendMode = element.getAttribute('mix-blend-mode') ?? 'normal';
     print('[ERWAN] element: ${element.outerXml} blendMode: $blendMode');
 
     final result = parent.merge(SvgBrush(
