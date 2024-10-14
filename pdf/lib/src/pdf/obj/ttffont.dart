@@ -128,6 +128,8 @@ class PdfTtfFont extends PdfFont {
     int charMin;
     int charMax;
 
+    print('[ERWAN] Building Type0 font: ${font.fontName}');
+
     final ttfWriter = TtfWriter(font);
     final data = ttfWriter.withChars(unicodeCMap.cmap);
     file.buf.putBytes(data);
