@@ -24,7 +24,6 @@ dependencies:
   bidi:
     git:
       url: https://github.com/secondlayerco/dart_bidi
-      path: lib
       ref: '3c7f55b'
   crypto: ^3.0.0
   image: ^4.1.0
