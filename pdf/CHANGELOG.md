@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.10.4-napkin
+
+- Upgrade Bidi dependency to v2.0.12
+
 # 1.10.3-napkin
 
 - Catch broken fonts (e.g. missing cmap)
