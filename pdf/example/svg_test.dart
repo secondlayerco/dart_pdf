@@ -29,12 +29,12 @@ void main() async {
         .asByteData()),
     fallbackFonts: [
     pw.Font.ttf(File(
-            '/Users/arnaudbrejeon/secondLayer/src/secondlayer/napkin-web-client/web/fonts/Noto_Sans_Kannada/static/NotoSansKannada-Regular.ttf')
+            '../../../secondlayer/napkin-web-client/web/fonts/Noto_Sans_Kannada/static/NotoSansKannada-Regular.ttf')
         .readAsBytesSync()
         .buffer
         .asByteData()),pw.Font.ttf(File(
-                '/Users/arnaudbrejeon/secondLayer/src/secondlayer/napkin-web-client/web/fonts/Geeza_Pro/GeezaPro-01.ttf'
-                // '/Users/arnaudbrejeon/secondLayer/src/secondlayer/napkin-web-client/web/fonts/Lateef/Lateef-Regular.ttf'
+                '../../../secondlayer/napkin-web-client/web/fonts/Geeza_Pro/GeezaPro-01.ttf'
+                // '../../../secondlayer/napkin-web-client/web/fonts/Lateef/Lateef-Regular.ttf'
         )
             .readAsBytesSync()
             .buffer
@@ -62,7 +62,8 @@ String svgRaw() => '''
           <!-- <tspan x="80" y="100" dominant-baseline="ideographic">HIJKL</tspan> -->
     		</text>
      		 <text style="font: 30px 'Helvetica', serif; white-space: pre;">
-          <tspan x="80" y="150" dominant-baseline="ideographic">123 ثم  مرحبا بالعالم AAA</tspan>
+          <tspan x="80" y="150" dominant-baseline="ideographic">ما‌‌ئده تباری**[123]،** فاطمه محمدی[2]</tspan>
+          <!-- <tspan x="80" y="150" dominant-baseline="ideographic">123 ثم  مرحبا بالعالم AAA</tspan> -->
      			<!-- <tspan x="80" y="150" dominant-baseline="ideographic">مرحبا بالعالم AAA</tspan> -->
       		</text>
      		 <text style="font: 30px 'Courier', serif; white-space: pre;">

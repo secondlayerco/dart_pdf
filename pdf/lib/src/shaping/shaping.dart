@@ -47,8 +47,7 @@ class Shaping {
       addFont(font);
     }
 
-    final paragraphs = bidi.BidiString.fromLogical(text).paragraphs;
-    if (paragraphs.isEmpty) {
+    if (text.isEmpty) {
       return [];
     }
 
@@ -192,20 +191,6 @@ class _TextAndFont {
   @override
   String toString() =>
       'TextAndFont(font: ${font.fontName}, LTR: $leftToRight, text: ` $text ` )';
-}
-
-void _reverseLtrSpans(List<_TextAndFont> items) {
-  final newItems = <_TextAndFont>[];
-
-  while (items.isNotEmpty) {
-    final newItemsSizeLength = newItems.length;
-    newItems.addAll(items.takeWhile((item) => item.leftToRight));
-    newItems
-        .addAll(items.takeWhile((item) => !item.leftToRight).toList().reversed);
-    items.removeRange(0, newItems.length - newItemsSizeLength);
-  }
-
-  items.addAll(newItems);
 }
 
 class BidiSpan {
