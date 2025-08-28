@@ -179,6 +179,9 @@ class HarfbuzzBinding {
           (v) => v.value == _bufferGetDirectionFunction(buffer._pointer),
           orElse: () => HarfBuzzDirection.invalid);
 
+  void bufferSetDirection(HarfbuzzBuffer buffer, HarfBuzzDirection direction) =>
+      _bufferSetDirectionFunction(buffer._pointer, direction.value);
+
   void shape(HarfbuzzFont font, HarfbuzzBuffer buffer) =>
       _shapeFunction(font._pointer, buffer._pointer, ffi.nullptr, 0);
 
@@ -372,6 +375,13 @@ class HarfbuzzBinding {
               ffi.Pointer<_HarfBuzzBufferStruct>)>>('hb_buffer_get_direction');
   late final _bufferGetDirectionFunction = _bufferGetDirectionFunctionPtr
       .asFunction<int Function(_HarfbuzzBuffer)>();
+
+  late final _bufferSetDirectionFunctionPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<_HarfBuzzBufferStruct>,
+              ffi.Int32)>>('hb_buffer_set_direction');
+  late final _bufferSetDirectionFunction = _bufferSetDirectionFunctionPtr
+      .asFunction<void Function(_HarfbuzzBuffer, int)>();
 
   late final _shapeFunctionPtr = _lookup<
       ffi.NativeFunction<

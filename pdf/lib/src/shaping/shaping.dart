@@ -92,13 +92,16 @@ class Shaping {
           spanRuneAndFonts.last.runes.add(rune);
         }
       }
-      runeAndFonts.addAll(spanRuneAndFonts);
+      if (span.leftToRight) {
+        runeAndFonts.addAll(spanRuneAndFonts);
+      } else {
+        runeAndFonts.addAll(spanRuneAndFonts.reversed);
+      }
     }
 
     final textsAndFonts =
         runeAndFonts.map((raf) => raf.toTextAndFont()).toList();
 
-    _reverseLtrSpans(textsAndFonts);
 
     final output = <ShapingResult>[];
 
@@ -113,6 +116,11 @@ class Shaping {
 
       _hb.bufferAddString(buffer, textAndFont.text);
       _hb.bufferGuessSegmentProperties(buffer);
+      _hb.bufferSetDirection(
+          buffer,
+          textAndFont.leftToRight
+              ? HarfBuzzDirection.leftToRight
+              : HarfBuzzDirection.rightToLeft);
 
       _hb.shape(faceFont, buffer);
 
@@ -242,7 +250,11 @@ class BidiSpan {
       paragraphSpans
           .add(BidiSpan(paragraphText.substring(start, levels.length), level));
 
-      spans.addAll(paragraphSpans);
+      if (paragraph.embeddingLevel % 2== 0) {
+        spans.addAll(paragraphSpans);
+      } else {
+        spans.addAll(paragraphSpans.reversed);
+      }
     }
 
     return spans.toList();
