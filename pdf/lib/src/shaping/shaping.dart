@@ -61,7 +61,7 @@ class ShapingOutput {
 
   @override
   String toString() =>
-      'ShapingOutput(leftToRight: $leftToRight, results: ${results.firstOrNull} => ${results.lastOrNull})';
+      'ShapingOutput(leftToRight: $leftToRight, results: ${results})';
 }
 
 class LinesShapingOutput {
@@ -69,6 +69,9 @@ class LinesShapingOutput {
 
   // In visual order
   List<ShapingOutput> lines;
+
+  @override
+  String toString() => 'LinesShapingOutput(lines: $lines})';
 }
 
 class Shaping {
@@ -81,8 +84,9 @@ class Shaping {
   final Map<String, HarfbuzzFace> _faces = {};
   final HarfbuzzBinding _hb = HarfbuzzBinding();
 
-  LinesShapingOutput shapeLines(String text, PdfTtfFont primaryFont,
-      List<PdfTtfFont> fallbackFonts, double maxWidth) {
+  LinesShapingOutput shapeLines(
+      String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
+      {required double maxWidth, required double letterSpacing}) {
     // First split text into lines
     final paragraphs = bidi.BidiString.fromLogical(text).paragraphs;
     if (paragraphs.isEmpty) {
@@ -91,8 +95,9 @@ class Shaping {
 
     // Paragraphs are logically ordered
     final splitParagraphs = paragraphs
-        .map((paragraph) =>
-            _shapeParagraph(paragraph, primaryFont, fallbackFonts, maxWidth))
+        .map((paragraph) => _shapeParagraph(
+            paragraph, primaryFont, fallbackFonts,
+            maxWidth: maxWidth, letterSpacing: letterSpacing))
         .toList();
 
     return LinesShapingOutput(
@@ -100,7 +105,8 @@ class Shaping {
   }
 
   (List<ShapingResult>, ShapingResult, double) _splitSingleShapingResult(
-      ShapingResult source, double currentWidth, double maxWidth) {
+      ShapingResult source, double currentWidth,
+      {required double maxWidth, required double letterSpacing}) {
     final output = <ShapingResult>[];
     var current =
         ShapingResult.empty(source.font, leftToRight: source.leftToRight);
@@ -108,6 +114,7 @@ class Shaping {
     for (var i = 0; i < source.glyphs.length; i++) {
       final advance =
           source.font.glyphIndexMetrics(source.glyphs[i]).advanceWidth;
+      final spacing = advance > 0 ? letterSpacing : 0.0;
       if (currentWidth + advance > maxWidth) {
         currentWidth = 0.0;
         output.add(current);
@@ -116,14 +123,15 @@ class Shaping {
       }
       final c = i < source.text.length ? source.text[i] : ''.runes.first;
       current.append(c, source.glyphs[i]);
-      currentWidth += advance;
+      currentWidth += advance + spacing;
     }
 
     return (output, current, currentWidth);
   }
 
-  List<ShapingOutput> _shapeParagraph(bidi.Paragraph p, PdfTtfFont primaryFont,
-      List<PdfTtfFont> fallbackFonts, double maxWidth) {
+  List<ShapingOutput> _shapeParagraph(
+      bidi.Paragraph p, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
+      {required double maxWidth, required double letterSpacing}) {
     final text = String.fromCharCodes(p.text);
 
     final shapingOutput = shape(text, primaryFont, fallbackFonts);
@@ -133,8 +141,9 @@ class Shaping {
     var width = 0.0;
     // shapingOutput.results are in visual order => lines will be in visual order
     for (final shapingResult in shapingOutput.results) {
-      final (newLines, current, updatedWidth) =
-          _splitSingleShapingResult(shapingResult, width, maxWidth);
+      final (newLines, current, updatedWidth) = _splitSingleShapingResult(
+          shapingResult, width,
+          maxWidth: maxWidth, letterSpacing: letterSpacing);
 
       if (newLines.isNotEmpty) {
         final newOutputs = newLines

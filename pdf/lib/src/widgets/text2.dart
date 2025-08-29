@@ -45,10 +45,13 @@ class Text2 extends Widget {
     final constraintWidth = constraints.hasBoundedWidth
         ? constraints.maxWidth
         : constraints.constrainWidth();
+    final letterSpacing = style?.letterSpacing ?? 0.0;
+
     final fontSize = style!.fontSize ?? 1.0;
 
-    final lines = Shaping().shapeLines(
-        text, primaryFont, fallbackFonts, constraintWidth / fontSize);
+    final lines = Shaping().shapeLines(text, primaryFont, fallbackFonts,
+        maxWidth: constraintWidth / fontSize,
+        letterSpacing: letterSpacing / fontSize);
 
     shapedLines
       ..clear()
@@ -62,27 +65,38 @@ class Text2 extends Widget {
     super.paint(context);
 
     final fontSize = style!.fontSize ?? 1.0;
+    final letterSpacing = style?.letterSpacing ?? 0.0;
+
     var y = box!.y;
 
     for (final line in shapedLines.reversed) {
-      var x = box!.x;
+      final width = line.metrics(letterSpacing: letterSpacing).width * fontSize;
+      var x = startX(width);
       var height = 0.0;
       for (final shaped in line.results) {
         final metrics = shaped.metrics * fontSize;
+        final spacing = metrics.advanceWidth > 0 ? letterSpacing : 0.0;
         final glyphIndices = shaped.glyphIndices;
         context.canvas.drawGlyphs(shaped.font, fontSize,
             String.fromCharCodes(shaped.text), glyphIndices, x, y);
-        x += metrics.advanceWidth;
+        x += metrics.advanceWidth + spacing;
         height = max(height, metrics.maxHeight);
       }
-      x = box!.x;
       y += height;
     }
   }
 
+  double startX(double width) => switch (textAlign) {
+        TextAlign.center => box!.x + (box!.width - width) / 2,
+        TextAlign.right => box!.x + box!.width - width,
+        _ => box!.x,
+      };
+
   void _setBox() {
-    final lineMetrics =
-        shapedLines.map((line) => line.metrics(letterSpacing: 0)).toList();
+    final letterSpacing = style?.letterSpacing ?? 0.0;
+    final lineMetrics = shapedLines
+        .map((line) => line.metrics(letterSpacing: letterSpacing))
+        .toList();
     final fontSize = style!.fontSize ?? 1.0;
     box = PdfRect(
         0,
