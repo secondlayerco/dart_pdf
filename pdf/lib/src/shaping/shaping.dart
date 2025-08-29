@@ -8,22 +8,67 @@ import '../pdf/obj/font.dart';
 import '../pdf/obj/ttffont.dart';
 import 'harfbuzz.dart';
 
+// Important concepts when dealing with bidi and shaping:
+//
+// Logical order: order as bytes in memory (in RTL, the first character is displayed rightmost)
+// Visual order: order as displayed on screen (in RTL, the first character is displayed leftmost)
+
 extension type GlyphIndex(int index) {}
 
 class ShapingResult {
-  ShapingResult(this.text, this.font, this.glyphs);
+  ShapingResult(this.text, this.font, this.glyphs, {required this.leftToRight});
 
-  String text;
+  ShapingResult.empty(this.font, {required this.leftToRight})
+      : text = [],
+        glyphs = [];
+
   final PdfTtfFont font;
+  final bool leftToRight;
+
+  // text is in logical order
+  List<int> text;
+
+  // glyphs are in logical order
   final List<GlyphIndex> glyphs;
 
   PdfFontMetrics get metrics =>
       PdfFontMetrics.append(glyphs.map((g) => font.glyphIndexMetrics(g)));
   List<int> get glyphIndices => glyphs.map((g) => g.index).toList();
 
+  void append(int char, GlyphIndex index) {
+    text.add(char);
+    glyphs.add(index);
+  }
+
   @override
   String toString() =>
-      'ShapingResult(text: ` $text `, font: ${font.fontName}, glyphs: $glyphs)';
+      'ShapingResult(leftToRight: $leftToRight, text: $text, font: ${font.fontName}), glyphs: $glyphs)';
+}
+
+class ShapingOutput {
+  ShapingOutput(this.results, {required this.leftToRight});
+
+  // In visual order
+  final List<ShapingResult> results;
+  bool leftToRight;
+
+  PdfFontMetrics metrics({double letterSpacing = 0}) =>
+      PdfFontMetrics.append(results.map((sr) => sr.metrics),
+          letterSpacing: letterSpacing);
+
+  List<int> get glyphIndices =>
+      results.expand((result) => result.glyphIndices).toList();
+
+  @override
+  String toString() =>
+      'ShapingOutput(leftToRight: $leftToRight, results: ${results.firstOrNull} => ${results.lastOrNull})';
+}
+
+class LinesShapingOutput {
+  LinesShapingOutput(this.lines);
+
+  // In visual order
+  List<ShapingOutput> lines;
 }
 
 class Shaping {
@@ -36,19 +81,91 @@ class Shaping {
   final Map<String, HarfbuzzFace> _faces = {};
   final HarfbuzzBinding _hb = HarfbuzzBinding();
 
-  void addFont(PdfTtfFont font) {
-    _faces[font.fontName] = _hb.faceFromData(font.font.bytes, 0);
+  LinesShapingOutput shapeLines(String text, PdfTtfFont primaryFont,
+      List<PdfTtfFont> fallbackFonts, double maxWidth) {
+    // First split text into lines
+    final paragraphs = bidi.BidiString.fromLogical(text).paragraphs;
+    if (paragraphs.isEmpty) {
+      return LinesShapingOutput([]);
+    }
+
+    // Paragraphs are logically ordered
+    final splitParagraphs = paragraphs
+        .map((paragraph) =>
+            _shapeParagraph(paragraph, primaryFont, fallbackFonts, maxWidth))
+        .toList();
+
+    return LinesShapingOutput(
+        splitParagraphs.expand((paragraph) => paragraph).toList());
   }
 
-  List<ShapingResult> shape(
+  (List<ShapingResult>, ShapingResult, double) _splitSingleShapingResult(
+      ShapingResult source, double currentWidth, double maxWidth) {
+    final output = <ShapingResult>[];
+    var current =
+        ShapingResult.empty(source.font, leftToRight: source.leftToRight);
+
+    for (var i = 0; i < source.glyphs.length; i++) {
+      final advance =
+          source.font.glyphIndexMetrics(source.glyphs[i]).advanceWidth;
+      if (currentWidth + advance > maxWidth) {
+        currentWidth = 0.0;
+        output.add(current);
+        current =
+            ShapingResult.empty(source.font, leftToRight: source.leftToRight);
+      }
+      final c = i < source.text.length ? source.text[i] : ''.runes.first;
+      current.append(c, source.glyphs[i]);
+      currentWidth += advance;
+    }
+
+    return (output, current, currentWidth);
+  }
+
+  List<ShapingOutput> _shapeParagraph(bidi.Paragraph p, PdfTtfFont primaryFont,
+      List<PdfTtfFont> fallbackFonts, double maxWidth) {
+    final text = String.fromCharCodes(p.text);
+
+    final shapingOutput = shape(text, primaryFont, fallbackFonts);
+
+    final lines = <ShapingOutput>[];
+    final currentLine = <ShapingResult>[];
+    var width = 0.0;
+    // shapingOutput.results are in visual order => lines will be in visual order
+    for (final shapingResult in shapingOutput.results) {
+      final (newLines, current, updatedWidth) =
+          _splitSingleShapingResult(shapingResult, width, maxWidth);
+
+      if (newLines.isNotEmpty) {
+        final newOutputs = newLines
+            .map((line) => ShapingOutput([line], leftToRight: line.leftToRight))
+            .toList();
+        newOutputs.first.results.insertAll(0, currentLine);
+        lines.addAll(newOutputs);
+        currentLine.clear();
+      }
+
+      width = updatedWidth;
+      currentLine.add(current);
+    }
+    if (currentLine.isNotEmpty) {
+      lines.add(ShapingOutput(currentLine,
+          leftToRight: currentLine.first.leftToRight));
+    }
+
+    return p.isLeftToRight ? lines : lines.reversed.toList();
+  }
+
+  // Input text and output shaping results are in logical order
+  ShapingOutput shape(
       String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts) {
     for (final font in [primaryFont, ...fallbackFonts]) {
       if (_faces.containsKey(font.fontName)) continue;
-      addFont(font);
+      _addFont(font);
     }
 
     if (text.isEmpty) {
-      return [];
+      return ShapingOutput([], leftToRight: true);
     }
 
     final primaryFontSubFamily = _getFontSubFamily(primaryFont);
@@ -91,6 +208,7 @@ class Shaping {
           spanRuneAndFonts.last.runes.add(rune);
         }
       }
+
       if (span.leftToRight) {
         runeAndFonts.addAll(spanRuneAndFonts);
       } else {
@@ -100,7 +218,6 @@ class Shaping {
 
     final textsAndFonts =
         runeAndFonts.map((raf) => raf.toTextAndFont()).toList();
-
 
     final output = <ShapingResult>[];
 
@@ -124,19 +241,20 @@ class Shaping {
       _hb.shape(faceFont, buffer);
 
       output.add(ShapingResult(
-        textAndFont.text,
+        textAndFont.text.runes.toList(),
         textAndFont.font,
         _hb
             .getGlyphInfos(buffer)
             .map((info) => GlyphIndex(info.codepoint))
             .toList(),
+        leftToRight: textAndFont.leftToRight,
       ));
 
       _hb.bufferDestroy(buffer);
       _hb.fontDestroy(faceFont);
     }
 
-    return output;
+    return ShapingOutput(output, leftToRight: output.first.leftToRight);
   }
 
   void dispose() {
@@ -144,6 +262,10 @@ class Shaping {
       _hb.faceDestroy(face);
     }
     _faces.clear();
+  }
+
+  void _addFont(PdfTtfFont font) {
+    _faces[font.fontName] = _hb.faceFromData(font.font.bytes, 0);
   }
 }
 
@@ -235,7 +357,7 @@ class BidiSpan {
       paragraphSpans
           .add(BidiSpan(paragraphText.substring(start, levels.length), level));
 
-      if (paragraph.embeddingLevel % 2== 0) {
+      if (paragraph.isLeftToRight) {
         spans.addAll(paragraphSpans);
       } else {
         spans.addAll(paragraphSpans.reversed);

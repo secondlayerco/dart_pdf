@@ -34,22 +34,7 @@ Font loadFont(String filename) {
   return Font.ttf(data.buffer.asByteData());
 }
 
-Iterable<TextDecoration> permute(
-    List<TextDecoration> prefix, List<TextDecoration> remaining) sync* {
-  yield TextDecoration.combine(prefix);
-  if (remaining.isNotEmpty) {
-    for (final decoration in remaining) {
-      final next = List<TextDecoration>.from(remaining);
-      next.remove(decoration);
-      yield* permute(prefix + <TextDecoration>[decoration], next);
-    }
-  }
-}
-
 void main() async {
-  Document.debug = true;
-  RichText.debug = true;
-
   final ttf = loadFont(
       '../../../secondlayer/napkin-web-client/web/fonts/Roboto/Roboto-Regular.ttf');
 
@@ -60,10 +45,24 @@ void main() async {
 
   pdf.addPage(Page(
       pageFormat: PdfPageFormat.a4,
-      build: (Context context) => Text2(str,
-          textDirection: TextDirection.ltr,
-          style:
-              TextStyle(fontSize: 12, font: ttf, fontFallback: [ttf2]))));
+      build: (Context context) =>
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              width: 400,
+              child: Text2(str,
+                  textDirection: TextDirection.rtl,
+                  style:
+                      TextStyle(fontSize: 12, font: ttf, fontFallback: [ttf2])),
+            ),
+            Spacer(),
+            Container(
+              width: 400,
+              child: Text(str,
+                  textDirection: TextDirection.rtl,
+                  style:
+                      TextStyle(fontSize: 12, font: ttf, fontFallback: [ttf2])),
+            ),
+          ])));
 
   final file = File('widgets-text.pdf');
   await file.writeAsBytes(await pdf.save());
@@ -74,5 +73,13 @@ void main() async {
 // """;
 
 const str = '''
-برنامه‌های وفاداری مبتنی بر ارزش (Value-Driven Loyalty Programs): این دسته از برنامه‌ها با عبور از رویکردهای صرفاً معاملاتی، بر ایجاد پیوندهای عمیق و پایدار با مشتریان تمرکز دارند. هم‌راستایی با ارزش‌های مشتریان نظیر پایداری زیست‌محیطی، مسئولیت‌پذیری اجتماعی، و ارائه تجربه‌های منحصربه‌فرد مانند دسترسی انحصاری به رویدادها یا محتوای ویژه، از جمله رویکردهای کلیدی در این حوزه به شمار می‌آید (شت و همکاران، 2020؛ فورنیه و آلوارز، 2024).
+تجربه مشتری (Customer Experience - CX) به عنوان یکی از عوامل کلیدی در شکل‌گیری وفاداری مشتری شناخته می‌شود. تجربه‌ای یکپارچه و مثبت در تمامی نقاط تماس مشتری با سازمان، نقش مهمی در ارتقاء وفاداری ایفا می‌کند (اشمیت، ۲۰۱۷). این تجربه شامل عناصری همچون سهولت در تعامل، کارایی، لذت و ارزش ادراک‌شده در طول مسیر تعامل مشتری با برند است.
+\n
+>ما‌‌ئده تباری##[123]،** فاطمه محمدی[2]
 ''';
+
+// const str = '''
+// يمكنك إنشاء عنصر جديد بدءًا من النص مباشرةً! بهذه الطريقة ستتجنب فهرسة موقع الويب باستخدام الكلمات الرئيسية الموجودة في Lorem Ipsum الكلاسيكي.
+// ''';
+
+// const str = 'ما‌‌ئده تباری##[123]،** فاطمه محمدی[2]';

@@ -62,12 +62,13 @@ String svgRaw() => '''
           <!-- <tspan x="80" y="100" dominant-baseline="ideographic">HIJKL</tspan> -->
     		</text>
      		 <text style="font: 30px 'Helvetica', serif; white-space: pre;">
-          <tspan x="80" y="150" dominant-baseline="ideographic">ما‌‌ئده تباری**[123]،** فاطمه محمدی[2]</tspan>
+          <tspan x="80" y="150" dominant-baseline="ideographic">این مقاله، به بررسی مفهوم وفاداری مشتری، استراتژی های آن و ارتباط رضایت مشتری با وفاداری او برای توسعه برنامه های وفاداری می پردازد.</tspan>
+          <tspan x="80" y="200" dominant-baseline="ideographic">ما‌‌ئده تباری**[123]،** فاطمه محمدی[2]</tspan>
           <!-- <tspan x="80" y="150" dominant-baseline="ideographic">123 ثم  مرحبا بالعالم AAA</tspan> -->
      			<!-- <tspan x="80" y="150" dominant-baseline="ideographic">مرحبا بالعالم AAA</tspan> -->
       		</text>
      		 <text style="font: 30px 'Courier', serif; white-space: pre;">
-     			<tspan x="80" y="200" dominant-baseline="ideographic">HIJ ${DateTime.now().millisecond}</tspan>
+     			<tspan x="80" y="250" dominant-baseline="ideographic">HIJ ${DateTime.now().millisecond}</tspan>
       		</text>
 			</g>
 		</g>

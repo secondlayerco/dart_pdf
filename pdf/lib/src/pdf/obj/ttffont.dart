@@ -46,8 +46,6 @@ class PdfTtfFont extends PdfFont {
 
     // By default the font is not used
     _setInUse(false);
-
-    Shaping().addFont(this);
   }
 
   void _setInUse(bool s) {
@@ -196,17 +194,12 @@ class PdfTtfFont extends PdfFont {
   @override
   void putText(PdfStream stream, String text) {
     final results = Shaping().shape(text, this, []);
-    putGlyphs(stream, results.expand((result) => result.glyphIndices).toList());
+    putGlyphs(stream, results.glyphIndices);
   }
 
   @override
-  PdfFontMetrics stringMetrics(String s, {double letterSpacing = 0}) {
-    final results = Shaping().shape(s, this, []);
-    return PdfFontMetrics.append(
-      results.map((result) => result.metrics),
-      letterSpacing: letterSpacing,
-    );
-  }
+  PdfFontMetrics stringMetrics(String s, {double letterSpacing = 0}) =>
+      Shaping().shape(s, this, []).metrics(letterSpacing: letterSpacing);
 
   PdfFontMetrics glyphIndexMetrics(GlyphIndex glyphIndex) =>
       font.glyphInfoMap[glyphIndex.index] ?? PdfFontMetrics.zero;
