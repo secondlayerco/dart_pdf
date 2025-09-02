@@ -94,6 +94,7 @@ class ShapingOutput {
       : resultsVisual = ListVisual.fromLogical(resultsInLogicalOrder,
             leftToRight: leftToRight);
 
+  // TODO: we should compact the results
   ShapingOutput.fromShapingOutputs(
       ListLogical<ShapingOutput> outputsInLogicalOrder)
       : resultsVisual = ListVisual(outputsInLogicalOrder
@@ -123,11 +124,16 @@ class ShapingOutput {
 }
 
 class LinesShapingOutput {
-  LinesShapingOutput.fromVisualOrder(this.linesVisual);
-  LinesShapingOutput.empty() : linesVisual = ListVisual.empty();
+  LinesShapingOutput.fromVisualOrder(this.linesVisual,
+      {required this.startingLocation, required this.endingLocation});
+
+  bool get isEmpty => linesVisual.isEmpty;
+
+  final double startingLocation;
+  final double endingLocation;
 
   // In visual order
-  ListVisual<ShapingOutput> linesVisual;
+  final ListVisual<ShapingOutput> linesVisual;
 
   @override
   String toString() =>
@@ -146,27 +152,42 @@ class Shaping {
 
   LinesShapingOutput shapeLinesWithBreaks(
       String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
-      {required double maxWidth, required double letterSpacing}) {
-    final paragraphs = bidi.BidiString.fromLogical(text, skipReshaping: true).paragraphs;
+      {required double startingLocation,
+      required double maxWidth,
+      required double letterSpacing}) {
+    final paragraphs =
+        bidi.BidiString.fromLogical(text, skipReshaping: true).paragraphs;
     final paragraphLines = paragraphs.map((paragraph) {
       return _shapeParagraphWithBreaks(paragraph, primaryFont, fallbackFonts,
-          maxWidth: maxWidth, letterSpacing: letterSpacing);
+          startingLocation: startingLocation,
+          maxWidth: maxWidth,
+          letterSpacing: letterSpacing);
     }).toList();
     final allLines =
         paragraphLines.expand((p) => p.linesVisual.toList()).toList();
-    return LinesShapingOutput.fromVisualOrder(ListVisual(allLines));
+    return LinesShapingOutput.fromVisualOrder(ListVisual(allLines),
+        startingLocation:
+            paragraphLines.firstOrNull?.startingLocation ?? startingLocation,
+        endingLocation:
+            paragraphLines.lastOrNull?.endingLocation ?? startingLocation);
   }
 
   LinesShapingOutput _shapeParagraphWithBreaks(bidi.Paragraph paragraph,
       PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
-      {required double maxWidth, required double letterSpacing}) {
+      {required double startingLocation,
+      required double maxWidth,
+      required double letterSpacing}) {
     final text = String.fromCharCodes(paragraph.text);
     final icuOffsets = IcuBinding.getIcuLineBreakOffsets(text);
 
     if (icuOffsets.isEmpty) {
       final shapingOutput = shape(text, primaryFont, fallbackFonts);
       return LinesShapingOutput.fromVisualOrder(
-          ListVisual.single(shapingOutput));
+        ListVisual.single(shapingOutput),
+        startingLocation: startingLocation,
+        endingLocation:
+            shapingOutput.metrics(letterSpacing: letterSpacing).width,
+      );
     }
 
     if (icuOffsets.first != 0) {
@@ -175,7 +196,7 @@ class Shaping {
 
     final lines = ListVisual<ShapingOutput>.empty();
     final currentLine = ListLogical<ShapingOutput>.empty();
-    var currentWidth = 0.0;
+    var currentWidth = startingLocation;
     for (var i = 0; i < icuOffsets.length - 1; i++) {
       final subString =
           paragraph.text.sublist(icuOffsets[i], icuOffsets[i + 1]);
@@ -187,7 +208,7 @@ class Shaping {
       final advanceWidth =
           shapingOutput.metrics(letterSpacing: letterSpacing).advanceWidth;
 
-          if (currentWidth + advanceWidth > maxWidth && currentLine.isNotEmpty) {
+      if (currentWidth + advanceWidth > maxWidth) {
         // New line
         lines.add(ShapingOutput.fromShapingOutputs(currentLine));
         currentLine.clear();
@@ -201,7 +222,8 @@ class Shaping {
       lines.add(ShapingOutput.fromShapingOutputs(currentLine));
     }
 
-    return LinesShapingOutput.fromVisualOrder(lines);
+    return LinesShapingOutput.fromVisualOrder(lines,
+        startingLocation: startingLocation, endingLocation: currentWidth);
   }
 
   // Input text and output shaping results are in logical order

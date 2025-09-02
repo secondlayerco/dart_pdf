@@ -3,6 +3,7 @@ import 'dart:math';
 import '../../pdf.dart';
 import '../shaping/shaping.dart';
 
+import 'annotations.dart';
 import 'geometry.dart';
 import 'text.dart';
 import 'text_style.dart';
@@ -34,8 +35,6 @@ class Text2 extends Widget {
   @override
   void layout(Context context, BoxConstraints constraints,
       {bool parentUsesSize = false}) {
-    box = PdfRect(0, 0, 200, 100);
-
     final primaryFont = style!.font!.getFont(context) as PdfTtfFont;
     final fallbackFonts = style!.fontFallback
         .map((font) => font.getFont(context))
@@ -51,6 +50,7 @@ class Text2 extends Widget {
 
     final lines = Shaping().shapeLinesWithBreaks(
         text, primaryFont, fallbackFonts,
+        startingLocation: 0.0,
         maxWidth: constraintWidth / fontSize,
         letterSpacing: letterSpacing / fontSize);
 
@@ -116,4 +116,162 @@ class Text2 extends Widget {
         lineMetrics.fold(0.0, (a, b) => max(a, b.left + b.width)),
         lineMetrics.fold(0.0, (a, b) => a + b.maxHeight));
   }
+}
+
+class RichText2 extends Widget {
+  RichText2({
+    required this.texts,
+    this.textAlign,
+    this.textDirection,
+    this.softWrap,
+    this.tightBounds = false,
+    this.textScaleFactor = 1.0,
+    this.overflow = TextOverflow.visible,
+  });
+
+  // In logical ordering
+  List<TextSpan> texts;
+  TextStyle? style;
+  TextAlign? textAlign;
+  TextDirection? textDirection;
+  bool? softWrap;
+  bool tightBounds;
+  double textScaleFactor;
+  TextOverflow? overflow;
+
+  final List<_RichTextLine> _lines = [];
+
+  @override
+  void layout(Context context, BoxConstraints constraints,
+      {bool parentUsesSize = false}) {
+    final constraintWidth = constraints.hasBoundedWidth
+        ? constraints.maxWidth
+        : constraints.constrainWidth();
+
+    _lines.clear();
+
+    var startingPosition = 0.0;
+    for (final text in texts) {
+      final spanLines = _layoutText(context, text,
+          startingLocation: startingPosition, maxWidth: constraintWidth);
+      if (spanLines.linesVisual.isEmpty) continue;
+
+      if (_lines.isEmpty) {
+        _lines.addAll(spanLines.linesVisual
+            .map((line) => _RichTextLine.single(text, line)));
+      } else {
+        _lines.last
+            .add(_RichTextShapingOutput(text, spanLines.linesVisual.first));
+        _lines.addAll(spanLines.linesVisual
+            .skip(1)
+            .map((line) => _RichTextLine.single(text, line)));
+      }
+      startingPosition += spanLines.endingLocation;
+    }
+
+    box = PdfRect(
+        0.0,
+        0.0,
+        constraintWidth,
+        _lines.fold(0.0, (a, b) => a + b.maxHeight));
+  }
+
+  LinesShapingOutput _layoutText(Context context, TextSpan textSpan,
+      {required double startingLocation, required double maxWidth}) {
+    final primaryFont = textSpan.style!.font!.getFont(context) as PdfTtfFont;
+    final fallbackFonts = textSpan.style!.fontFallback
+        .map((font) => font.getFont(context))
+        .cast<PdfTtfFont>()
+        .toList();
+
+    final letterSpacing = textSpan.style?.letterSpacing ?? 0.0;
+    final fontSize = textSpan.style?.fontSize ?? 1.0;
+
+    return Shaping().shapeLinesWithBreaks(
+        textSpan.text ?? '', primaryFont, fallbackFonts,
+        startingLocation: startingLocation,
+        maxWidth: maxWidth / fontSize,
+        letterSpacing: letterSpacing / fontSize);
+  }
+
+  @override
+  void paint(Context context) {
+    super.paint(context);
+
+    var y = box!.y;
+
+    for (final line in _lines.reversed) {
+      final width = line.width;
+      var x = startX(width);
+      var height = 0.0;
+      for (final item in line.items) {
+        final fontSize = item.textSpan.style?.fontSize ?? 1.0;
+        final letterSpacing = item.textSpan.style?.letterSpacing ?? 0.0;
+
+        final itemMetrics =
+            item.shapingOutput.metrics(letterSpacing: letterSpacing);
+        for (final shaped in item.shapingOutput.resultsVisual) {
+          final metrics = shaped.metrics * fontSize;
+          final spacing = metrics.advanceWidth > 0 ? letterSpacing : 0.0;
+          final glyphIndicesLogical = shaped.glyphIndicesLogical;
+          // TODO: I'm not sure this is the correct formula, it works for Latin
+          final realY = y + itemMetrics.maxHeight - itemMetrics.ascent;
+          context.canvas.drawGlyphs(
+              shaped.font,
+              fontSize,
+              String.fromCharCodes(shaped.textLogical),
+              glyphIndicesLogical,
+              x,
+              realY,
+              charSpace: 0);
+          x += metrics.advanceWidth + spacing;
+          height = max(height, metrics.maxHeight);
+        }
+      }
+      y += height;
+    }
+  }
+
+  double startX(double width) => switch (textAlign) {
+        TextAlign.center => box!.x + (box!.width - width) / 2,
+        TextAlign.right => box!.x + box!.width - width,
+        _ => box!.x,
+      };
+}
+
+class _RichTextShapingOutput {
+  _RichTextShapingOutput(this.textSpan, this.shapingOutput);
+
+  ShapingOutput shapingOutput;
+  TextSpan textSpan;
+
+  @override
+  String toString() =>
+      '$_RichTextShapingOutput(${textSpan.text}, $shapingOutput)';
+}
+
+class _RichTextLine {
+  _RichTextLine(this.items);
+  _RichTextLine.single(TextSpan textSpan, ShapingOutput shapingOutput)
+      : items = [_RichTextShapingOutput(textSpan, shapingOutput)];
+
+  List<_RichTextShapingOutput> items;
+
+  void add(_RichTextShapingOutput item) => items.add(item);
+
+  List<PdfFontMetrics> get allMetrics {
+    return items
+        .map((i) =>
+            i.shapingOutput.metrics(
+                letterSpacing: i.textSpan.style?.letterSpacing ?? 0.0) *
+            (i.textSpan.style?.fontSize ?? 0.0))
+        .toList();
+  }
+
+  double get left => allMetrics.firstOrNull?.left ?? 0.0;
+  double get width => allMetrics.fold(0.0, (a, b) => a + b.width);
+  double get maxHeight => allMetrics.fold(0.0, (a, b) => max(a, b.maxHeight));
+
+  @override
+  String toString() => '$_RichTextLine(${items.join('\n\t')})';
 }

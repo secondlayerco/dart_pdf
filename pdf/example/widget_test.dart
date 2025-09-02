@@ -39,7 +39,14 @@ void main() async {
       '../../../secondlayer/napkin-web-client/web/fonts/Roboto/Roboto-Regular.ttf');
 
   final ttf2 = loadFont(
-      '../../../secondlayer/napkin-web-client/web/fonts/Geeza_Pro/GeezaPro-01.ttf');
+      '../../../secondlayer/napkin-web-client/web/fonts/Shantell_Sans/static/ShantellSans-Regular.ttf');
+
+  final fallbacks = [
+    loadFont(
+        '../../../secondlayer/napkin-web-client/web/fonts/Geeza_Pro/GeezaPro-01.ttf'),
+    loadFont(
+        '../../../secondlayer/napkin-web-client/web/fonts/Noto_Sans_Kannada/static/NotoSansKannada-Regular.ttf')
+  ];
 
   pdf = Document(userDocumentID: '1234567890');
 
@@ -47,36 +54,55 @@ void main() async {
       pageFormat: PdfPageFormat.a4,
       build: (Context context) => Stack(children: [
             Positioned(
-                top: 100,
-                left: 20,
-                child: Container(
-                  width: 400,
-                  child: Text2(str,
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.left,
-                      style: TextStyle(
-                          fontSize: 12, font: ttf, fontFallback: [ttf2])),
-                )),
-            Positioned(
-                top: 100,
+                top: 400,
                 left: 20,
                 child: Container(
                   width: 400,
                   child: Text(str,
                       textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.left,
                       style: TextStyle(
                           color: PdfColor.fromHex('#FF00FF'),
                           fontSize: 12,
                           font: ttf,
-                          fontFallback: [ttf2])),
+                          fontFallback: fallbacks)),
                 )),
+            Positioned(
+                top: 100,
+                left: 20,
+                child: Container(
+                    width: 400,
+                    child: RichText2(textAlign: TextAlign.left, texts: [
+                      TextSpan(
+                          text: str1,
+                          style: TextStyle(
+                              fontSize: 12,
+                              font: ttf,
+                              fontFallback: fallbacks)),
+                      TextSpan(
+                          text: str2,
+                          style: TextStyle(
+                              fontSize: 12,
+                              font: ttf,
+                              fontFallback: fallbacks)),
+                      TextSpan(
+                          text: str2,
+                          style: TextStyle(
+                              fontSize: 12,
+                              font: ttf2,
+                              fontFallback: fallbacks)),
+                    ]))),
           ])));
 
   final file = File('widgets-text.pdf');
   await file.writeAsBytes(await pdf.save());
 }
 
-// const str = 'ABC';
+const str1 = 'ಇಲ್ಲ ಪಕ್ಕದಲ್ಲಿ ಹಾಂ ಬಳ ನೀವು ಹಾಂ ';
+const str2 =
+    'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ';
+const str3 =
+    'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
 const str =
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
@@ -89,7 +115,7 @@ const str =
 // لم أضف القوى تحرّكت الرئيسية. إيو أي إعمار واحدة قائمة, لم تطوير عرفها جعل. عل لها جسيمة فشكّل التبرعات, أم كان هناك هُزم والكساد. هنا؟ شمال السبب ضرب بل, لكل بل لإعادة بريطانيا. جُل تشكيل والتي عسكرياً ٣٠, أن بتحدّي الدنمارك الكونجرس تحت, أي جهة عرفها اللازمة ماليزيا،.
 // ''';
 
-// const str = '''
+// const str2 = '''
 // مرحباً! أنا بأروح السوق اليوم (الساعة 5).
 // ''';
 
