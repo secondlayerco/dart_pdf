@@ -45,41 +45,54 @@ void main() async {
 
   pdf.addPage(Page(
       pageFormat: PdfPageFormat.a4,
-      build: (Context context) =>
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 400,
-              child: Text2(str,
-                  textDirection: TextDirection.rtl,
-                  style:
-                      TextStyle(fontSize: 12, font: ttf, fontFallback: [ttf2])),
-            ),
-            Spacer(),
-            Container(
-              width: 400,
-              child: Text(str,
-                  textDirection: TextDirection.rtl,
-                  style:
-                      TextStyle(fontSize: 12, font: ttf, fontFallback: [ttf2])),
-            ),
+      build: (Context context) => Stack(children: [
+            Positioned(
+                top: 100,
+                left: 20,
+                child: Container(
+                  width: 400,
+                  child: Text2(str,
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                          fontSize: 12, font: ttf, fontFallback: [ttf2])),
+                )),
+            Positioned(
+                top: 100,
+                left: 20,
+                child: Container(
+                  width: 400,
+                  child: Text(str,
+                      textDirection: TextDirection.ltr,
+                      style: TextStyle(
+                          color: PdfColor.fromHex('#FF00FF'),
+                          fontSize: 12,
+                          font: ttf,
+                          fontFallback: [ttf2])),
+                )),
           ])));
 
   final file = File('widgets-text.pdf');
   await file.writeAsBytes(await pdf.save());
 }
 
-// const str =
-//     """Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
-// """;
+// const str = 'ABC';
 
-const str = '''
-تجربه مشتری (Customer) به عنوان یکی از عوامل کلیدی در شکل‌گیری وفاداری مشتری شناخته می‌شود. تجربه‌ای یکپارچه و مثبت در تمامی نقاط تماس مشتری با سازمان، نقش مهمی در ارتقاء وفاداری ایفا می‌کند (اشمیت، ۲۰۱۷). این تجربه شامل عناصری همچون سهولت در تعامل، کارایی، لذت و ارزش ادراک‌شده در طول مسیر تعامل مشتری با برند است.
-\n\n
->ما‌‌ئده تباری##[123]،** فاطمه محمدی[2]
-''';
+const str =
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
 // const str = '''
-// يمكنك إنشاء عنصر جديد بدءًا من النص مباشرةً! بهذه الطريقة ستتجنب فهرسة موقع الويب باستخدام الكلمات الرئيسية الموجودة في Lorem Ipsum الكلاسيكي.
+// تجربه مشتری (Customer) به عنوان یکی از عوامل کلیدی در شکل‌گیری وفاداری مشتری شناخته می‌شود. تجربه‌ای یکپارچه و مثبت در تمامی نقاط تماس مشتری با سازمان، نقش مهمی در ارتقاء وفاداری ایفا می‌کند (اشمیت، ۲۰۱۷). این تجربه شامل عناصری همچون سهولت در تعامل، کارایی، لذت و ارزش ادراک‌شده در طول مسیر تعامل مشتری با برند است.
 // ''';
 
-// const str = 'ما‌‌ئده تباری##[123]،** فاطمه محمدی[2]';
+// const str = '''
+// لم أضف القوى تحرّكت الرئيسية. إيو أي إعمار واحدة قائمة, لم تطوير عرفها جعل. عل لها جسيمة فشكّل التبرعات, أم كان هناك هُزم والكساد. هنا؟ شمال السبب ضرب بل, لكل بل لإعادة بريطانيا. جُل تشكيل والتي عسكرياً ٣٠, أن بتحدّي الدنمارك الكونجرس تحت, أي جهة عرفها اللازمة ماليزيا،.
+// ''';
+
+// const str = '''
+// مرحباً! أنا بأروح السوق اليوم (الساعة 5).
+// ''';
+
+// const str = '''
+// של העיר וכמקובל כדי. עוד לחבר כלכלה דת, צעד אודות המלחמה מונחונים אל, בקר והוא ספורט לתרום על. מה טכניים קלאסיים עוד. של בקר ביוני בחירות ביולוגיה, ראשי עזרה על בקר, ב המשפט זכויות מדע. אל לחשבון התפתחות מלא, בה מוגש הספרות וכמקובל עזה, הראשי תקשורת קצרמרים בדף אל.
+// ''';

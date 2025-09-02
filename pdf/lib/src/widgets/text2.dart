@@ -49,13 +49,14 @@ class Text2 extends Widget {
 
     final fontSize = style!.fontSize ?? 1.0;
 
-    final lines = Shaping().shapeLines(text, primaryFont, fallbackFonts,
+    final lines = Shaping().shapeLinesWithBreaks(
+        text, primaryFont, fallbackFonts,
         maxWidth: constraintWidth / fontSize,
         letterSpacing: letterSpacing / fontSize);
 
     shapedLines
       ..clear()
-      ..addAll(lines.lines);
+      ..addAll(lines.linesVisual);
 
     _setBox();
   }
@@ -70,15 +71,25 @@ class Text2 extends Widget {
     var y = box!.y;
 
     for (final line in shapedLines.reversed) {
-      final width = line.metrics(letterSpacing: letterSpacing).width * fontSize;
+      final lineMetrics = line.metrics(letterSpacing: letterSpacing) * fontSize;
+
+      final width = lineMetrics.width;
       var x = startX(width);
       var height = 0.0;
-      for (final shaped in line.results) {
+      for (final shaped in line.resultsVisual) {
         final metrics = shaped.metrics * fontSize;
         final spacing = metrics.advanceWidth > 0 ? letterSpacing : 0.0;
-        final glyphIndices = shaped.glyphIndices;
-        context.canvas.drawGlyphs(shaped.font, fontSize,
-            String.fromCharCodes(shaped.text), glyphIndices, x, y);
+        final glyphIndicesLogical = shaped.glyphIndicesLogical;
+        // TODO: I'm not sure this is the correct formula, it works for Latin
+        final realY = y + lineMetrics.maxHeight - lineMetrics.ascent;
+        context.canvas.drawGlyphs(
+            shaped.font,
+            fontSize,
+            String.fromCharCodes(shaped.textLogical),
+            glyphIndicesLogical,
+            x,
+            realY,
+            charSpace: 0);
         x += metrics.advanceWidth + spacing;
         height = max(height, metrics.maxHeight);
       }
@@ -94,14 +105,15 @@ class Text2 extends Widget {
 
   void _setBox() {
     final letterSpacing = style?.letterSpacing ?? 0.0;
-    final lineMetrics = shapedLines
-        .map((line) => line.metrics(letterSpacing: letterSpacing))
-        .toList();
     final fontSize = style!.fontSize ?? 1.0;
+
+    final lineMetrics = shapedLines
+        .map((line) => line.metrics(letterSpacing: letterSpacing) * fontSize);
+
     box = PdfRect(
-        0,
-        0,
-        lineMetrics.fold<double>(0, (a, b) => max(a, b.width)) * fontSize,
-        lineMetrics.fold<double>(0, (a, b) => a + b.maxHeight) * fontSize);
+        0.0,
+        0.0,
+        lineMetrics.fold(0.0, (a, b) => max(a, b.left + b.width)),
+        lineMetrics.fold(0.0, (a, b) => a + b.maxHeight));
   }
 }
