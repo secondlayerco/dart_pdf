@@ -194,7 +194,7 @@ class PdfTtfFont extends PdfFont {
   @override
   void putText(PdfStream stream, String text) {
     final results = Shaping().shape(text, this, []);
-    putGlyphs(stream, results.glyphIndices);
+    putGlyphs(stream, results.glyphIndicesVisual);
   }
 
   @override

@@ -7,6 +7,7 @@ import '../pdf/font/ttf_parser.dart';
 import '../pdf/obj/font.dart';
 import '../pdf/obj/ttffont.dart';
 import 'harfbuzz.dart';
+import 'icu.dart';
 
 // Important concepts when dealing with bidi and shaping:
 //
@@ -15,63 +16,122 @@ import 'harfbuzz.dart';
 
 extension type GlyphIndex(int index) {}
 
+extension type IterableLogical<T>(Iterable<T> it) implements Iterable<T> {
+  List<T> toListLogical() => ListLogical(it.toList());
+}
+
+extension type ListLogical<T>(List<T> list)
+    implements IterableLogical<T>, List<T> {
+  ListLogical.single(T element) : list = [element];
+  ListLogical.empty() : list = [];
+
+  IterableLogical<E> map<E>(E Function(T e) toElement) =>
+      IterableLogical(list.map(toElement));
+
+  IterableLogical<T> visual({bool leftToRight = true}) =>
+      leftToRight ? IterableLogical(list) : IterableLogical(list.reversed);
+}
+
+extension type IterableVisual<T>(Iterable<T> it) implements Iterable<T> {
+  List<T> toListVisual() => ListLogical(it.toList());
+}
+
+extension type ListVisual<T>(List<T> list)
+    implements IterableVisual<T>, List<T> {
+  ListVisual.fromLogical(ListLogical<T> logical, {required bool leftToRight})
+      : list = leftToRight
+            ? ListVisual(logical.list)
+            : ListVisual(logical.list.reversed.toList());
+
+  ListVisual.single(T element) : list = [element];
+  ListVisual.empty() : list = [];
+
+  IterableVisual<E> map<E>(E Function(T e) toElement) =>
+      IterableVisual(list.map(toElement));
+
+  IterableLogical<T> logical({bool leftToRight = true}) =>
+      leftToRight ? IterableLogical(list) : IterableLogical(list.reversed);
+}
+
 class ShapingResult {
-  ShapingResult(this.text, this.font, this.glyphs, {required this.leftToRight});
+  ShapingResult.fromLogicalOrder(
+      this.textLogical, this.font, this.glyphsLogical,
+      {required this.leftToRight});
 
   ShapingResult.empty(this.font, {required this.leftToRight})
-      : text = [],
-        glyphs = [];
+      : textLogical = ListLogical.empty(),
+        glyphsLogical = ListLogical.empty();
 
   final PdfTtfFont font;
   final bool leftToRight;
 
-  // text is in logical order
-  List<int> text;
+  final ListLogical<int> textLogical;
+  final ListLogical<GlyphIndex> glyphsLogical;
 
-  // glyphs are in logical order
-  final List<GlyphIndex> glyphs;
+  PdfFontMetrics get metrics => PdfFontMetrics.append(
+      glyphsLogical.map((g) => font.glyphIndexMetrics(g)));
 
-  PdfFontMetrics get metrics =>
-      PdfFontMetrics.append(glyphs.map((g) => font.glyphIndexMetrics(g)));
-  List<int> get glyphIndices => glyphs.map((g) => g.index).toList();
+  List<int> get glyphIndicesLogical =>
+      glyphsLogical.map((g) => g.index).toList();
 
-  void append(int char, GlyphIndex index) {
-    text.add(char);
-    glyphs.add(index);
+  void appendLogical(int char, GlyphIndex index) {
+    textLogical.add(char);
+    glyphsLogical.add(index);
   }
 
   @override
   String toString() =>
-      'ShapingResult(leftToRight: $leftToRight, text: $text, font: ${font.fontName}), glyphs: $glyphs)';
+      'ShapingResult(leftToRight: $leftToRight, text: $textLogical, font: ${font.fontName}), glyphs: $glyphsLogical)';
 }
 
 class ShapingOutput {
-  ShapingOutput(this.results, {required this.leftToRight});
+  ShapingOutput.fromVisualOrder(this.resultsVisual,
+      {required this.leftToRight});
 
-  // In visual order
-  final List<ShapingResult> results;
+  ShapingOutput.fromLogicalOrder(
+      ListLogical<ShapingResult> resultsInLogicalOrder,
+      {required this.leftToRight})
+      : resultsVisual = ListVisual.fromLogical(resultsInLogicalOrder,
+            leftToRight: leftToRight);
+
+  ShapingOutput.fromShapingOutputs(
+      ListLogical<ShapingOutput> outputsInLogicalOrder)
+      : resultsVisual = ListVisual(outputsInLogicalOrder
+            .visual(
+                leftToRight:
+                    outputsInLogicalOrder.firstOrNull?.leftToRight ?? true)
+            .expand((output) => output.resultsVisual)
+            .toList()),
+        leftToRight = outputsInLogicalOrder.firstOrNull?.leftToRight ?? true;
+
+  final ListVisual<ShapingResult> resultsVisual;
   bool leftToRight;
 
+  IterableLogical<ShapingResult> get resultsLogical =>
+      resultsVisual.logical(leftToRight: leftToRight);
+
   PdfFontMetrics metrics({double letterSpacing = 0}) =>
-      PdfFontMetrics.append(results.map((sr) => sr.metrics),
+      PdfFontMetrics.append(resultsVisual.map((sr) => sr.metrics),
           letterSpacing: letterSpacing);
 
-  List<int> get glyphIndices =>
-      results.expand((result) => result.glyphIndices).toList();
+  List<int> get glyphIndicesVisual =>
+      resultsVisual.expand((result) => result.glyphIndicesLogical).toList();
 
   @override
   String toString() =>
-      'ShapingOutput(leftToRight: $leftToRight, results: ${results})';
+      'ShapingOutput(leftToRight: $leftToRight, resultsVisual: $resultsVisual)';
 }
 
 class LinesShapingOutput {
-  LinesShapingOutput(this.lines);
+  LinesShapingOutput.fromVisualOrder(this.linesVisual);
+  LinesShapingOutput.empty() : linesVisual = ListVisual.empty();
 
   // In visual order
-  List<ShapingOutput> lines;
+  ListVisual<ShapingOutput> linesVisual;
 
   @override
-  String toString() => 'LinesShapingOutput(lines: $lines})';
+  String toString() =>
+      'LinesShapingOutput(${linesVisual.length} lines:\n${linesVisual.join('\n')}\n)';
 }
 
 class Shaping {
@@ -84,97 +144,78 @@ class Shaping {
   final Map<String, HarfbuzzFace> _faces = {};
   final HarfbuzzBinding _hb = HarfbuzzBinding();
 
-  LinesShapingOutput shapeLines(
+  LinesShapingOutput shapeLinesWithBreaks(
       String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
       {required double maxWidth, required double letterSpacing}) {
-    // First split text into lines
     final paragraphs = bidi.BidiString.fromLogical(text).paragraphs;
-    if (paragraphs.isEmpty) {
-      return LinesShapingOutput([]);
-    }
-
-    // Paragraphs are logically ordered
-    final splitParagraphs = paragraphs
-        .map((paragraph) => _shapeParagraph(
-            paragraph, primaryFont, fallbackFonts,
-            maxWidth: maxWidth, letterSpacing: letterSpacing))
-        .toList();
-
-    return LinesShapingOutput(
-        splitParagraphs.expand((paragraph) => paragraph).toList());
-  }
-
-  (List<ShapingResult>, ShapingResult, double) _splitSingleShapingResult(
-      ShapingResult source, double currentWidth,
-      {required double maxWidth, required double letterSpacing}) {
-    final output = <ShapingResult>[];
-    var current =
-        ShapingResult.empty(source.font, leftToRight: source.leftToRight);
-
-    for (var i = 0; i < source.glyphs.length; i++) {
-      final advance =
-          source.font.glyphIndexMetrics(source.glyphs[i]).advanceWidth;
-      final spacing = advance > 0 ? letterSpacing : 0.0;
-      if (currentWidth + advance > maxWidth) {
-        currentWidth = 0.0;
-        output.add(current);
-        current =
-            ShapingResult.empty(source.font, leftToRight: source.leftToRight);
-      }
-      final c = i < source.text.length ? source.text[i] : ''.runes.first;
-      current.append(c, source.glyphs[i]);
-      currentWidth += advance + spacing;
-    }
-
-    return (output, current, currentWidth);
-  }
-
-  List<ShapingOutput> _shapeParagraph(
-      bidi.Paragraph p, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
-      {required double maxWidth, required double letterSpacing}) {
-    final text = String.fromCharCodes(p.text);
-
-    final shapingOutput = shape(text, primaryFont, fallbackFonts);
-
-    final lines = <ShapingOutput>[];
-    final currentLine = <ShapingResult>[];
-    var width = 0.0;
-    // shapingOutput.results are in visual order => lines will be in visual order
-    for (final shapingResult in shapingOutput.results) {
-      final (newLines, current, updatedWidth) = _splitSingleShapingResult(
-          shapingResult, width,
+    final paragraphLines = paragraphs.map((paragraph) {
+      return _shapeParagraphWithBreaks(paragraph, primaryFont, fallbackFonts,
           maxWidth: maxWidth, letterSpacing: letterSpacing);
+    }).toList();
+    final allLines =
+        paragraphLines.expand((p) => p.linesVisual.toList()).toList();
+    return LinesShapingOutput.fromVisualOrder(ListVisual(allLines));
+  }
 
-      if (newLines.isNotEmpty) {
-        final newOutputs = newLines
-            .map((line) => ShapingOutput([line], leftToRight: line.leftToRight))
-            .toList();
-        newOutputs.first.results.insertAll(0, currentLine);
-        lines.addAll(newOutputs);
+  LinesShapingOutput _shapeParagraphWithBreaks(bidi.Paragraph paragraph,
+      PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
+      {required double maxWidth, required double letterSpacing}) {
+    final text = String.fromCharCodes(paragraph.text);
+    final icuOffsets = IcuBinding.getIcuLineBreakOffsets(text);
+
+    if (icuOffsets.isEmpty) {
+      final shapingOutput = shape(text, primaryFont, fallbackFonts);
+      return LinesShapingOutput.fromVisualOrder(
+          ListVisual.single(shapingOutput));
+    }
+
+    if (icuOffsets.first != 0) {
+      icuOffsets.insert(0, 0);
+    }
+
+    final lines = ListVisual<ShapingOutput>.empty();
+    final currentLine = ListLogical<ShapingOutput>.empty();
+    var currentWidth = 0.0;
+    for (var i = 0; i < icuOffsets.length - 1; i++) {
+      final subString =
+          paragraph.text.sublist(icuOffsets[i], icuOffsets[i + 1]);
+      final embeddingLevels =
+          paragraph.embeddingLevels.sublist(icuOffsets[i], icuOffsets[i + 1]);
+      final shapingOutput = shape2(
+          subString, embeddingLevels, primaryFont, fallbackFonts,
+          leftToRight: paragraph.isLeftToRight);
+      final advanceWidth =
+          shapingOutput.metrics(letterSpacing: letterSpacing).advanceWidth;
+
+          if (currentWidth + advanceWidth > maxWidth && currentLine.isNotEmpty) {
+        // New line
+        lines.add(ShapingOutput.fromShapingOutputs(currentLine));
         currentLine.clear();
+        currentWidth = 0.0;
       }
-
-      width = updatedWidth;
-      currentLine.add(current);
+      currentLine.add(shapingOutput);
+      currentWidth += advanceWidth;
     }
+
     if (currentLine.isNotEmpty) {
-      lines.add(ShapingOutput(currentLine,
-          leftToRight: currentLine.first.leftToRight));
+      lines.add(ShapingOutput.fromShapingOutputs(currentLine));
     }
 
-    return p.isLeftToRight ? lines : lines.reversed.toList();
+    return LinesShapingOutput.fromVisualOrder(lines);
   }
 
   // Input text and output shaping results are in logical order
-  ShapingOutput shape(
-      String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts) {
+  ShapingOutput shape2(List<int> text, List<int> embeddingLevels,
+      PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
+      {required bool leftToRight}) {
     for (final font in [primaryFont, ...fallbackFonts]) {
       if (_faces.containsKey(font.fontName)) continue;
       _addFont(font);
     }
 
     if (text.isEmpty) {
-      return ShapingOutput([], leftToRight: true);
+      return ShapingOutput.fromLogicalOrder(ListLogical.empty(),
+          leftToRight: true);
     }
 
     final primaryFontSubFamily = _getFontSubFamily(primaryFont);
@@ -186,7 +227,113 @@ class Shaping {
       ...fallbackFonts
           .where((f) => _getFontSubFamily(f) != primaryFontSubFamily),
       null
-    ];
+    ].map((font) => font).toList();
+
+    // Is there a font that supports all runes?
+    // Skip first one because it's given twice in the ordered fonts
+    final commonFont = orderedFonts.skip(1).firstWhere(
+        (f) => text.every((rune) => f?.isRuneSupported(rune) == true),
+        orElse: () => null);
+
+    final bidiSpans = BidiSpan.createBidiSpans2(text, embeddingLevels,
+        leftToRight: leftToRight);
+
+    final runeAndFonts = <_RunesAndFont>[];
+    for (final span in bidiSpans) {
+      final spanRuneAndFonts = <_RunesAndFont>[];
+      for (var rune in span.text.runes) {
+        var font = commonFont ??
+            orderedFonts.firstWhere((f) => f?.isRuneSupported(rune) != false);
+        if (font != null) {
+          orderedFonts[1] = font;
+        }
+        if (font == null) {
+          rune = '?'.runes.first;
+          font = primaryFont;
+        }
+
+        if (spanRuneAndFonts.isEmpty || font != spanRuneAndFonts.last.font) {
+          spanRuneAndFonts
+              .add(_RunesAndFont([rune], font, leftToRight: span.leftToRight));
+        } else {
+          spanRuneAndFonts.last.runes.add(rune);
+        }
+      }
+
+      if (span.leftToRight) {
+        runeAndFonts.addAll(spanRuneAndFonts);
+      } else {
+        runeAndFonts.addAll(spanRuneAndFonts.reversed);
+      }
+    }
+
+    final textsAndFonts =
+        runeAndFonts.map((raf) => raf.toTextAndFont()).toList();
+
+    final output = ListVisual<ShapingResult>.empty();
+
+    for (final textAndFont in textsAndFonts) {
+      final face = Shaping._instance._faces[textAndFont.font.fontName];
+      if (face == null) {
+        throw Exception('Font is missing');
+      }
+
+      final faceFont = _hb.fontCreate(face);
+      final buffer = _hb.bufferCreate();
+
+      _hb.bufferAddString(buffer, textAndFont.text);
+      _hb.bufferGuessSegmentProperties(buffer);
+      _hb.bufferSetDirection(
+          buffer,
+          textAndFont.leftToRight
+              ? HarfBuzzDirection.leftToRight
+              : HarfBuzzDirection.rightToLeft);
+
+      _hb.shape(faceFont, buffer);
+
+      output.add(ShapingResult.fromLogicalOrder(
+        ListLogical(textAndFont.text.runes.toList()),
+        textAndFont.font,
+        ListLogical(
+          _hb
+              .getGlyphInfos(buffer)
+              .map((info) => GlyphIndex(info.codepoint))
+              .toList(),
+        ),
+        leftToRight: textAndFont.leftToRight,
+      ));
+
+      _hb.bufferDestroy(buffer);
+      _hb.fontDestroy(faceFont);
+    }
+
+    return ShapingOutput.fromVisualOrder(output,
+        leftToRight: output.first.leftToRight);
+  }
+
+  // Input text and output shaping results are in logical order
+  ShapingOutput shape(
+      String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts) {
+    for (final font in [primaryFont, ...fallbackFonts]) {
+      if (_faces.containsKey(font.fontName)) continue;
+      _addFont(font);
+    }
+
+    if (text.isEmpty) {
+      return ShapingOutput.fromLogicalOrder(ListLogical.empty(),
+          leftToRight: true);
+    }
+
+    final primaryFontSubFamily = _getFontSubFamily(primaryFont);
+    final orderedFonts = <PdfTtfFont?>[
+      primaryFont,
+      primaryFont,
+      ...fallbackFonts
+          .where((f) => _getFontSubFamily(f) == primaryFontSubFamily),
+      ...fallbackFonts
+          .where((f) => _getFontSubFamily(f) != primaryFontSubFamily),
+      null
+    ].map((font) => font).toList();
 
     // Is there a font that supports all runes?
     // Skip first one because it's given twice in the ordered fonts
@@ -228,7 +375,7 @@ class Shaping {
     final textsAndFonts =
         runeAndFonts.map((raf) => raf.toTextAndFont()).toList();
 
-    final output = <ShapingResult>[];
+    final output = ListVisual<ShapingResult>.empty();
 
     for (final textAndFont in textsAndFonts) {
       final face = Shaping._instance._faces[textAndFont.font.fontName];
@@ -249,13 +396,15 @@ class Shaping {
 
       _hb.shape(faceFont, buffer);
 
-      output.add(ShapingResult(
-        textAndFont.text.runes.toList(),
+      output.add(ShapingResult.fromLogicalOrder(
+        ListLogical(textAndFont.text.runes.toList()),
         textAndFont.font,
-        _hb
-            .getGlyphInfos(buffer)
-            .map((info) => GlyphIndex(info.codepoint))
-            .toList(),
+        ListLogical(
+          _hb
+              .getGlyphInfos(buffer)
+              .map((info) => GlyphIndex(info.codepoint))
+              .toList(),
+        ),
         leftToRight: textAndFont.leftToRight,
       ));
 
@@ -263,7 +412,8 @@ class Shaping {
       _hb.fontDestroy(faceFont);
     }
 
-    return ShapingOutput(output, leftToRight: output.first.leftToRight);
+    return ShapingOutput.fromVisualOrder(output,
+        leftToRight: output.first.leftToRight);
   }
 
   void dispose() {
@@ -335,6 +485,49 @@ class BidiSpan {
 
   @override
   String toString() => 'BidiSpan(text: ` $text `  , leftToRight: $leftToRight)';
+
+  static List<BidiSpan> createBidiSpans2(List<int> text, List<int> levels,
+      {required bool leftToRight}) {
+    if (levels.isEmpty) {
+      return [];
+    }
+
+    final spans = <BidiSpan>[];
+
+    // for (final paragraph in paragraphs) {
+    final paragraphText = String.fromCharCodes(text);
+    final paragraphSpans = <BidiSpan>[];
+    // final levels = paragraph.embeddingLevels;
+    // if (levels.isEmpty) {
+    //   continue;
+    // }
+
+    var start = 0;
+    var level = levels.first;
+
+    for (var i = 1; i < levels.length; i++) {
+      final curLevel = levels[i];
+      if (level == curLevel) {
+        continue;
+      }
+
+      paragraphSpans.add(BidiSpan(paragraphText.substring(start, i), level));
+      start = i;
+      level = curLevel;
+    }
+
+    paragraphSpans
+        .add(BidiSpan(paragraphText.substring(start, levels.length), level));
+
+    if (leftToRight) {
+      spans.addAll(paragraphSpans);
+    } else {
+      spans.addAll(paragraphSpans.reversed);
+    }
+    // }
+
+    return spans.toList();
+  }
 
   static List<BidiSpan> createBidiSpans(String text) {
     final paragraphs = bidi.BidiString.fromLogical(text).paragraphs;

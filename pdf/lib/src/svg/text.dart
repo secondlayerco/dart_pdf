@@ -176,9 +176,14 @@ class SvgText extends SvgOperation {
       {PdfTextRenderingMode mode = PdfTextRenderingMode.fill}) {
     final fontSize = brush.fontSize!.sizeValue;
     var x = 0.0;
-    for (final shapingResult in shapingOutput.results) {
-      canvas.drawGlyphs(shapingResult.font, fontSize, String.fromCharCodes(shapingResult.text),
-          shapingResult.glyphIndices, x, 0,
+    for (final shapingResult in shapingOutput.resultsVisual) {
+      canvas.drawGlyphs(
+          shapingResult.font,
+          fontSize,
+          String.fromCharCodes(shapingResult.textLogical),
+          shapingResult.glyphIndicesLogical,
+          x,
+          0,
           mode: mode);
       x += shapingResult.metrics.advanceWidth * fontSize;
     }
