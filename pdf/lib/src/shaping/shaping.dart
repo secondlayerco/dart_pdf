@@ -147,7 +147,7 @@ class Shaping {
   LinesShapingOutput shapeLinesWithBreaks(
       String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
       {required double maxWidth, required double letterSpacing}) {
-    final paragraphs = bidi.BidiString.fromLogical(text).paragraphs;
+    final paragraphs = bidi.BidiString.fromLogical(text, skipReshaping: true).paragraphs;
     final paragraphLines = paragraphs.map((paragraph) {
       return _shapeParagraphWithBreaks(paragraph, primaryFont, fallbackFonts,
           maxWidth: maxWidth, letterSpacing: letterSpacing);
