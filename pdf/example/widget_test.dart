@@ -82,12 +82,20 @@ void main() async {
                       TextSpan(
                           text: str2,
                           style: TextStyle(
+                              color: PdfColor.fromHex('#FF00FF'),
                               fontSize: 12,
                               font: ttf,
                               fontFallback: fallbacks)),
                       TextSpan(
-                          text: str2,
+                          text: str3,
                           style: TextStyle(
+                              fontSize: 12,
+                              font: ttf2,
+                              fontFallback: fallbacks)),
+                      TextSpan(
+                          text: str4,
+                          style: TextStyle(
+                              color: PdfColor.fromHex('#0000FF'),
                               fontSize: 12,
                               font: ttf2,
                               fontFallback: fallbacks)),
@@ -102,7 +110,9 @@ const str1 = 'ಇಲ್ಲ ಪಕ್ಕದಲ್ಲಿ ಹಾಂ ಬಳ ನೀ�
 const str2 =
     'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ';
 const str3 =
-    'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+    'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. ';
+const str4 =
+    'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
 const str =
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';

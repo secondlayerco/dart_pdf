@@ -108,6 +108,9 @@ class ShapingOutput {
   final ListVisual<ShapingResult> resultsVisual;
   bool leftToRight;
 
+  bool get isEmpty => resultsVisual.isEmpty;
+  bool get isNotEmpty => !isEmpty;
+
   IterableLogical<ShapingResult> get resultsLogical =>
       resultsVisual.logical(leftToRight: leftToRight);
 
