@@ -72,43 +72,47 @@ void main() async {
                 left: 20,
                 child: Container(
                     width: 400,
-                    child: RichText2(textAlign: TextAlign.left, texts: [
-                      TextSpan(
-                          text: str1,
-                          style: TextStyle(
-                              fontSize: 12,
-                              font: ttf,
-                              fontFallback: fallbacks)),
-                      TextSpan(
-                          text: str2,
-                          style: TextStyle(
-                              color: PdfColor.fromHex('#FF00FF'),
-                              fontSize: 12,
-                              font: ttf,
-                              fontFallback: fallbacks)),
-                      TextSpan(
-                          text: str3,
-                          style: TextStyle(
-                              fontSize: 12,
-                              font: ttf2,
-                              fontFallback: fallbacks)),
-                      TextSpan(
-                          text: str4,
-                          style: TextStyle(
-                              color: PdfColor.fromHex('#0000FF'),
-                              fontSize: 12,
-                              font: ttf2,
-                              fontFallback: fallbacks)),
-                    ]))),
+                    child: RichText2(
+                        textAlign: TextAlign.left,
+                        text: TextSpan(children: [
+                          TextSpan(
+                              text: str1,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  decoration: TextDecoration.lineThrough,
+                                  font: ttf,
+                                  fontFallback: fallbacks)),
+                          TextSpan(
+                              text: str2,
+                              style: TextStyle(
+                                  color: PdfColor.fromHex('#FF00FF'),
+                                  fontSize: 12,
+                                  font: ttf,
+                                  fontFallback: fallbacks)),
+                          TextSpan(
+                              text: str3,
+                              style: TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  fontSize: 12,
+                                  font: ttf2,
+                                  fontFallback: fallbacks)),
+                          TextSpan(
+                              text: str4,
+                              style: TextStyle(
+                                  color: PdfColor.fromHex('#0000FF'),
+                                  fontSize: 12,
+                                  font: ttf,
+                                  fontFallback: fallbacks)),
+                        ])))),
           ])));
 
   final file = File('widgets-text.pdf');
   await file.writeAsBytes(await pdf.save());
 }
 
-const str1 = 'ಇಲ್ಲ ಪಕ್ಕದಲ್ಲಿ ಹಾಂ ಬಳ ನೀವು ಹಾಂ ';
-const str2 =
+const str1 =
     'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. ';
+const str2 = 'ಇಲ್ಲ ಪಕ್ಕದಲ್ಲಿ ಹಾಂ ಬಳ ನೀವು ಹಾಂ ';
 const str3 =
     'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. ';
 const str4 =

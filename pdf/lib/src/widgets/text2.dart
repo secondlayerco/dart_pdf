@@ -120,30 +120,40 @@ class Text2 extends Widget {
 
 class RichText2 extends Widget {
   RichText2({
-    required this.texts,
+    required this.text,
     this.textAlign,
     this.textDirection,
     this.softWrap,
+    this.style,
     this.tightBounds = false,
     this.textScaleFactor = 1.0,
     this.overflow = TextOverflow.visible,
   });
 
   // In logical ordering
-  List<TextSpan> texts;
-  TextStyle? style;
-  TextAlign? textAlign;
-  TextDirection? textDirection;
-  bool? softWrap;
-  bool tightBounds;
-  double textScaleFactor;
-  TextOverflow? overflow;
+  final InlineSpan text;
+  final TextStyle? style;
+  final TextAlign? textAlign;
+  final TextDirection? textDirection;
+  final bool? softWrap;
+  final bool tightBounds;
+  final double textScaleFactor;
+  final TextOverflow? overflow;
 
   final List<_RichTextLine> _lines = [];
 
   @override
   void layout(Context context, BoxConstraints constraints,
       {bool parentUsesSize = false}) {
+    final children = <TextSpan>[];
+    text.visitChildren((child, style, parentStyle) {
+      if (child is TextSpan) {
+        children.add(child);
+        return true;
+      }
+      return false;
+    }, null, null);
+
     final constraintWidth = constraints.hasBoundedWidth
         ? constraints.maxWidth
         : constraints.constrainWidth();
@@ -151,7 +161,7 @@ class RichText2 extends Widget {
     _lines.clear();
 
     var startingPosition = 0.0;
-    for (final textSpan in texts) {
+    for (final textSpan in children) {
       final letterSpacing = textSpan.style?.letterSpacing ?? 0.0;
       final fontSize = textSpan.style?.fontSize ?? 1.0;
 
@@ -236,6 +246,8 @@ class RichText2 extends Widget {
               x,
               realY,
               charSpace: 0);
+          _foregroundPaint(
+              context, item.textSpan.style, x, realY, metrics, letterSpacing);
           x += metrics.advanceWidth + spacing;
           height = max(height, metrics.maxHeight);
         }
@@ -249,6 +261,41 @@ class RichText2 extends Widget {
         TextAlign.right => box!.x + box!.width - width,
         _ => box!.x,
       };
+
+  void _foregroundPaint(
+    Context context,
+    TextStyle? style,
+    double xLocation,
+    double yLocation,
+    PdfFontMetrics metrics,
+    double letterSpacing,
+  ) {
+    if (style == null || style.decoration == null) {
+      return;
+    }
+
+    if (style.decoration!.contains(TextDecoration.underline)) {
+      final base = metrics.descent / 2;
+      context.canvas.drawLine(
+        xLocation + metrics.effectiveLeft,
+        yLocation + base,
+        xLocation + metrics.right,
+        yLocation + base,
+      );
+      context.canvas.strokePath();
+    }
+
+    if (style.decoration!.contains(TextDecoration.lineThrough)) {
+      final base = (style.fontSize ?? 1) / 4;
+      context.canvas.drawLine(
+        xLocation + metrics.effectiveLeft,
+        yLocation + base,
+        xLocation + metrics.right,
+        yLocation + base,
+      );
+      context.canvas.strokePath();
+    }
+  }
 }
 
 class _RichTextShapingOutput {
