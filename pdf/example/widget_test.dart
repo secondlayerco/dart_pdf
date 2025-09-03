@@ -76,7 +76,7 @@ void main() async {
                         textAlign: TextAlign.left,
                         text: TextSpan(children: [
                           TextSpan(
-                              text: str1,
+                              text: str,
                               style: TextStyle(
                                   fontSize: 12,
                                   decoration: TextDecoration.lineThrough,

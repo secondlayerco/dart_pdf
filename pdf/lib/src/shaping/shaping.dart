@@ -28,12 +28,12 @@ extension type ListLogical<T>(List<T> list)
   IterableLogical<E> map<E>(E Function(T e) toElement) =>
       IterableLogical(list.map(toElement));
 
-  IterableLogical<T> visual({bool leftToRight = true}) =>
-      leftToRight ? IterableLogical(list) : IterableLogical(list.reversed);
+  IterableVisual<T> visual({bool leftToRight = true}) =>
+      leftToRight ? IterableVisual(list) : IterableVisual(list.reversed);
 }
 
 extension type IterableVisual<T>(Iterable<T> it) implements Iterable<T> {
-  List<T> toListVisual() => ListLogical(it.toList());
+  List<T> toListVisual() => it.toList();
 }
 
 extension type ListVisual<T>(List<T> list)
@@ -68,6 +68,9 @@ class ShapingResult {
   final ListLogical<int> textLogical;
   final ListLogical<GlyphIndex> glyphsLogical;
 
+  bool compatible(ShapingResult other) =>
+      leftToRight == other.leftToRight && font == other.font;
+
   PdfFontMetrics get metrics => PdfFontMetrics.append(
       glyphsLogical.map((g) => font.glyphIndexMetrics(g)));
 
@@ -77,6 +80,11 @@ class ShapingResult {
   void appendLogical(int char, GlyphIndex index) {
     textLogical.add(char);
     glyphsLogical.add(index);
+  }
+
+  void append(ShapingResult other) {
+    textLogical.addAll(other.textLogical);
+    glyphsLogical.addAll(other.glyphsLogical);
   }
 
   @override
@@ -94,16 +102,30 @@ class ShapingOutput {
       : resultsVisual = ListVisual.fromLogical(resultsInLogicalOrder,
             leftToRight: leftToRight);
 
-  // TODO: we should compact the results
-  ShapingOutput.fromShapingOutputs(
-      ListLogical<ShapingOutput> outputsInLogicalOrder)
-      : resultsVisual = ListVisual(outputsInLogicalOrder
-            .visual(
-                leftToRight:
-                    outputsInLogicalOrder.firstOrNull?.leftToRight ?? true)
-            .expand((output) => output.resultsVisual)
-            .toList()),
-        leftToRight = outputsInLogicalOrder.firstOrNull?.leftToRight ?? true;
+  factory ShapingOutput.fromShapingOutputs(
+      ListLogical<ShapingOutput> outputsInLogicalOrder) {
+    final leftToRight = outputsInLogicalOrder.firstOrNull?.leftToRight ?? true;
+    final compacted = _compact(outputsInLogicalOrder, leftToRight: leftToRight);
+    return ShapingOutput.fromVisualOrder(compacted, leftToRight: leftToRight);
+  }
+
+  static ListVisual<ShapingResult> _compact(ListLogical<ShapingOutput> items,
+      {required bool leftToRight}) {
+    final compacted = ListLogical<ShapingResult>.empty();
+
+    for (final item in items) {
+      for (final result in item.resultsLogical) {
+        if (compacted.isNotEmpty && result.compatible(compacted.last)) {
+          compacted.last.append(result);
+        } else {
+          compacted.add(result);
+        }
+      }
+    }
+
+    return ListVisual(
+        compacted.visual(leftToRight: leftToRight).toListVisual());
+  }
 
   final ListVisual<ShapingResult> resultsVisual;
   bool leftToRight;

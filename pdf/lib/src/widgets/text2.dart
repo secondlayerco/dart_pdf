@@ -279,7 +279,7 @@ class RichText2 extends Widget {
       context.canvas.drawLine(
         xLocation + metrics.effectiveLeft,
         yLocation + base,
-        xLocation + metrics.right,
+        xLocation + metrics.advanceWidth,
         yLocation + base,
       );
       context.canvas.strokePath();
@@ -290,7 +290,7 @@ class RichText2 extends Widget {
       context.canvas.drawLine(
         xLocation + metrics.effectiveLeft,
         yLocation + base,
-        xLocation + metrics.right,
+        xLocation + metrics.advanceWidth,
         yLocation + base,
       );
       context.canvas.strokePath();
