@@ -54,16 +54,19 @@ void main() async {
       pageFormat: PdfPageFormat.a4,
       build: (Context context) => Stack(children: [
             Positioned(
-                top: 400,
+                top: 100,
                 left: 20,
                 child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: PdfColor.fromHex('#000000')),
+                  ),
                   width: 400,
                   child: Text(str,
                       textDirection: TextDirection.ltr,
                       textAlign: TextAlign.left,
                       style: TextStyle(
                           color: PdfColor.fromHex('#FF00FF'),
-                          fontSize: 12,
+                          fontSize: 34,
                           font: ttf,
                           fontFallback: fallbacks)),
                 )),
@@ -71,6 +74,9 @@ void main() async {
                 top: 100,
                 left: 20,
                 child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: PdfColor.fromHex('#000000')),
+                    ),
                     width: 400,
                     child: RichText2(
                         textAlign: TextAlign.left,
@@ -78,7 +84,7 @@ void main() async {
                           TextSpan(
                               text: str,
                               style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 34,
                                   // decoration: TextDecoration.lineThrough,
                                   font: ttf,
                                   fontFallback: fallbacks)),
@@ -118,6 +124,8 @@ const str3 =
 const str4 =
     'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
+const str = 'Kannada bug - PDF';
+
 // const str =
 //     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
@@ -131,9 +139,9 @@ const str4 =
 // لم أضف القوى تحرّكت الرئيسية. إيو أي إعمار واحدة قائمة, لم تطوير عرفها جعل. عل لها جسيمة فشكّل التبرعات, أم كان هناك هُزم والكساد. هنا؟ شمال السبب ضرب بل, لكل بل لإعادة بريطانيا. جُل تشكيل والتي عسكرياً ٣٠, أن بتحدّي الدنمارك الكونجرس تحت, أي جهة عرفها اللازمة ماليزيا،.
 // ''';
 
-const str= '''
-تجربه مشتری (Customer - Expe) به می‌کند (اشمیت، ۲۰۱۷).
-''';
+// const str = '''
+// تجربه مشتری (Customer - Expe) به می‌کند (اشمیت، ۲۰۱۷).
+// ''';
 
 // const str = '''
 // ما‌‌ئده تباری**[1]،** فاطمه محمدی[2]
