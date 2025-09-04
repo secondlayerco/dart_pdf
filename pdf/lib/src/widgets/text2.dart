@@ -103,7 +103,7 @@ class RichText2 extends Widget {
     box = PdfRect(
         0.0,
         0.0,
-        constraintWidth,
+        constraints.constrainWidth(_lines.fold(0.0, (a, b) => max(a, b.width))),
         constraints.constrainHeight(
             _lines.fold(0.0, (a, b) => a + b.maxHeight + b.lineSpacing)));
   }
