@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import 'dart:math';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -23,6 +24,7 @@ import '../font/font_metrics.dart';
 import '../font/ttf_parser.dart';
 import '../font/ttf_writer.dart';
 import '../format/array.dart';
+import '../format/base.dart';
 import '../format/dict.dart';
 import '../format/name.dart';
 import '../format/num.dart';
@@ -46,8 +48,6 @@ class PdfTtfFont extends PdfFont {
 
     // By default the font is not used
     _setInUse(false);
-
-    Shaping().addFont(this);
   }
 
   void _setInUse(bool s) {
@@ -125,11 +125,13 @@ class PdfTtfFont extends PdfFont {
   }
 
   void _buildType0(PdfDict params) {
+    _buildCmap();
+
     int charMin;
     int charMax;
 
     final ttfWriter = TtfWriter(font);
-    final data = ttfWriter.withGlyphIndices(font, unicodeCMap.cmap);
+    final data = ttfWriter.withGlyphIndices(font, _glyphIndex);
     file.buf.putBytes(data);
     file.params['/Length1'] = PdfNum(data.length);
 
@@ -142,7 +144,7 @@ class PdfTtfFont extends PdfFont {
         const PdfNum(0),
         widthsObject.ref(),
       ]),
-      '/CIDToGIDMap': const PdfName('/Identity'),
+      '/CIDToGIDMap': _cidToGidMap(),
       '/DW': const PdfNum(1000),
       '/Subtype': const PdfName('/CIDFontType2'),
       '/CIDSystemInfo': PdfDict.values({
@@ -158,13 +160,17 @@ class PdfTtfFont extends PdfFont {
     params['/ToUnicode'] = unicodeCMap.ref();
 
     charMin = 0;
-    charMax = unicodeCMap.cmap.length - 1;
+    charMax = _glyphIndex.length - 1;
     for (var i = charMin; i <= charMax; i++) {
       widthsObject.params.add(PdfNum(
-          (glyphIndexMetrics(GlyphIndex(unicodeCMap.cmap[i])).advanceWidth * 1000.0)
+          (glyphIndexMetrics(GlyphIndex(_glyphIndex[i])).advanceWidth * 1000.0)
               .toInt()));
     }
   }
+
+  PdfDataType _cidToGidMap() => PdfArray(_invertGlyphIndex()
+      .map((value) => [PdfNum((value >> 16) & 0xFFFF), PdfNum(value & 0xFFFF)])
+      .expand((value) => value));
 
   @override
   void prepare() {
@@ -177,36 +183,53 @@ class PdfTtfFont extends PdfFont {
     }
   }
 
+  final List<int> _glyphIndex = [];
+
+  void _buildCmap() {
+    final glyphNotFound = '?'.runes.first;
+    for (var i = 0; i < _glyphIndex.length; i++) {
+      final char = font.charToGlyphIndexMap.entries
+          .where((entry) => entry.value == _glyphIndex[i])
+          .map((e) => e.key)
+          .firstOrNull;
+      unicodeCMap.cmap[i] = char ?? glyphNotFound;
+    }
+  }
+
+  List<int> _invertGlyphIndex() {
+    final inverted = List.filled(_glyphIndex.fold(0, max) + 1, 0);
+    for (var i = 0; i < _glyphIndex.length; i++) {
+      inverted[_glyphIndex[i]] = i;
+    }
+    return inverted;
+  }
+
   @override
   void putGlyphs(PdfStream stream, List<int> glyphIndices) {
     _setInUse(true);
     stream.putByte(0x3c);
     for (final glyphIndex in glyphIndices) {
-      var indexInCMap = unicodeCMap.cmap.indexOf(glyphIndex);
-      if (indexInCMap == -1) {
-        indexInCMap = unicodeCMap.cmap.length;
-        unicodeCMap.cmap.add(glyphIndex);
+      var indexInMap = _glyphIndex.indexOf(glyphIndex);
+      if (indexInMap == -1) {
+        indexInMap = _glyphIndex.length;
+        _glyphIndex.add(glyphIndex);
       }
-      stream.putBytes(
-          latin1.encode(indexInCMap.toRadixString(16).padLeft(4, '0')));
+      stream
+          .putBytes(latin1.encode(indexInMap.toRadixString(16).padLeft(4, '0')));
     }
+
     stream.putByte(0x3e);
   }
 
   @override
   void putText(PdfStream stream, String text) {
     final results = Shaping().shape(text, this, []);
-    putGlyphs(stream, results.expand((result) => result.glyphIndices).toList());
+    putGlyphs(stream, results.glyphIndicesVisual);
   }
 
   @override
-  PdfFontMetrics stringMetrics(String s, {double letterSpacing = 0}) {
-    final results = Shaping().shape(s, this, []);
-    return PdfFontMetrics.append(
-      results.map((result) => result.metrics),
-      letterSpacing: letterSpacing,
-    );
-  }
+  PdfFontMetrics stringMetrics(String s, {double letterSpacing = 0}) =>
+      Shaping().shape(s, this, []).metrics(letterSpacing: letterSpacing);
 
   PdfFontMetrics glyphIndexMetrics(GlyphIndex glyphIndex) =>
       font.glyphInfoMap[glyphIndex.index] ?? PdfFontMetrics.zero;

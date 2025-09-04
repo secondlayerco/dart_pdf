@@ -33,7 +33,7 @@ class SvgText extends SvgOperation {
     this.x,
     this.y,
     this.dx,
-    this.shapingResults,
+    this.shapingOutput,
     this.tspan,
     this.metrics,
     SvgBrush brush,
@@ -67,11 +67,10 @@ class SvgText extends SvgOperation {
             _brush.fontFamily!, _brush.fontStyle!, _brush.fontWeight!)
         as PdfTtfFont;
 
-    final shapingResults =
+    final shapingOutput =
         Shaping().shape(text, pdfFont, painter.fallbackFontsTtf);
-    final metrics =
-        PdfFontMetrics.append(shapingResults.map((sr) => sr.metrics)) *
-            _brush.fontSize!.sizeValue;
+
+    final metrics = shapingOutput.metrics() * _brush.fontSize!.sizeValue;
 
     var baselineOffset = 0.0;
     // Only ideographic is supported
@@ -109,7 +108,7 @@ class SvgText extends SvgOperation {
       offset.x,
       offset.y,
       metrics.advanceWidth,
-      shapingResults,
+      shapingOutput,
       tspan,
       metrics,
       _brush,
@@ -129,7 +128,7 @@ class SvgText extends SvgOperation {
 
   final Iterable<SvgText> tspan;
 
-  final List<ShapingResult> shapingResults;
+  final ShapingOutput shapingOutput;
 
   @override
   void paintShape(PdfGraphics canvas) {
@@ -177,9 +176,13 @@ class SvgText extends SvgOperation {
       {PdfTextRenderingMode mode = PdfTextRenderingMode.fill}) {
     final fontSize = brush.fontSize!.sizeValue;
     var x = 0.0;
-    for (final shapingResult in shapingResults) {
-      canvas.drawGlyphs(shapingResult.font, fontSize, shapingResult.text,
-          shapingResult.glyphIndices, x, 0,
+    for (final shapingResult in shapingOutput.resultsVisual) {
+      canvas.drawGlyphs(
+          shapingResult.font,
+          fontSize,
+          shapingResult.glyphIndicesLogical,
+          x,
+          0,
           mode: mode);
       x += shapingResult.metrics.advanceWidth * fontSize;
     }

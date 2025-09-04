@@ -22,8 +22,8 @@ class PdfUnicodeCmap extends PdfObjectStream {
   /// Create a Unicode character map object
   PdfUnicodeCmap(PdfDocument pdfDocument, this.protect) : super(pdfDocument);
 
-  /// List of characters
-  final cmap = <int>[0];
+  // character code to unicode
+  final cmap = <int, int>{0: 0};
 
   /// Protects the text from being "seen" by the PDF reader.
   final bool protect;
@@ -31,7 +31,8 @@ class PdfUnicodeCmap extends PdfObjectStream {
   @override
   void prepare() {
     if (protect) {
-      cmap.fillRange(1, cmap.length, 0x20);
+      cmap.updateAll((key, value) => 0x20);
+      cmap[0] = 0x00;
     }
 
     buf.putString('/CIDInit/ProcSet\nfindresource begin\n'
@@ -49,10 +50,9 @@ class PdfUnicodeCmap extends PdfObjectStream {
         'endcodespacerange\n'
         '${cmap.length} beginbfchar\n');
 
-    for (var key = 0; key < cmap.length; key++) {
-      final value = cmap[key];
+    for (final entry in cmap.entries) {
       buf.putString(
-          '<${key.toRadixString(16).toUpperCase().padLeft(4, '0')}> <${value.toRadixString(16).toUpperCase().padLeft(4, '0')}>\n');
+          '<${entry.key.toRadixString(16).toUpperCase().padLeft(4, '0')}> <${entry.value.toRadixString(16).toUpperCase().padLeft(4, '0')}>\n');
     }
 
     buf.putString('endbfchar\n'
