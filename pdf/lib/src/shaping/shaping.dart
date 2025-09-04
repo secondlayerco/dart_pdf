@@ -60,6 +60,10 @@ class ShapingResult {
   ShapingResult.empty(this.font, {required this.leftToRight})
       : glyphsLogical = ListLogical.empty();
 
+  ShapingResult clone() =>
+      ShapingResult.fromLogicalOrder(font, ListLogical([...glyphsLogical]),
+          leftToRight: leftToRight);
+
   final PdfTtfFont font;
   final bool leftToRight;
 
@@ -103,20 +107,21 @@ class ShapingOutput {
 
   static ListVisual<ShapingResult> _compact(ListLogical<ShapingOutput> items,
       {required bool leftToRight}) {
-    final compacted = ListLogical<ShapingResult>.empty();
+    final output = ListVisual(items
+        .visual(leftToRight: leftToRight)
+        .expand((output) => output.resultsVisual)
+        .toList());
 
-    for (final item in items) {
-      for (final result in item.resultsLogical) {
-        if (compacted.isNotEmpty && result.compatible(compacted.last)) {
-          compacted.last.append(result);
-        } else {
-          compacted.add(result);
-        }
+    final compacted = ListVisual<ShapingResult>.empty();
+    for (final o in output) {
+      if (compacted.isNotEmpty && o.compatible(compacted.last)) {
+        compacted.last.append(o);
+      } else {
+        compacted.add(o.clone());
       }
     }
 
-    return ListVisual(
-        compacted.visual(leftToRight: leftToRight).toListVisual());
+    return compacted;
   }
 
   final ListVisual<ShapingResult> resultsVisual;

@@ -79,30 +79,30 @@ void main() async {
                               text: str,
                               style: TextStyle(
                                   fontSize: 12,
-                                  decoration: TextDecoration.lineThrough,
+                                  // decoration: TextDecoration.lineThrough,
                                   font: ttf,
                                   fontFallback: fallbacks)),
-                          TextSpan(
-                              text: str2,
-                              style: TextStyle(
-                                  color: PdfColor.fromHex('#FF00FF'),
-                                  fontSize: 12,
-                                  font: ttf,
-                                  fontFallback: fallbacks)),
-                          TextSpan(
-                              text: str3,
-                              style: TextStyle(
-                                  decoration: TextDecoration.underline,
-                                  fontSize: 12,
-                                  font: ttf2,
-                                  fontFallback: fallbacks)),
-                          TextSpan(
-                              text: str4,
-                              style: TextStyle(
-                                  color: PdfColor.fromHex('#0000FF'),
-                                  fontSize: 12,
-                                  font: ttf,
-                                  fontFallback: fallbacks)),
+                          // TextSpan(
+                          //     text: str2,
+                          //     style: TextStyle(
+                          //         color: PdfColor.fromHex('#FF00FF'),
+                          //         fontSize: 12,
+                          //         font: ttf,
+                          //         fontFallback: fallbacks)),
+                          // TextSpan(
+                          //     text: str3,
+                          //     style: TextStyle(
+                          //         decoration: TextDecoration.underline,
+                          //         fontSize: 12,
+                          //         font: ttf2,
+                          //         fontFallback: fallbacks)),
+                          // TextSpan(
+                          //     text: str4,
+                          //     style: TextStyle(
+                          //         color: PdfColor.fromHex('#0000FF'),
+                          //         fontSize: 12,
+                          //         font: ttf,
+                          //         fontFallback: fallbacks)),
                         ])))),
           ])));
 
@@ -118,8 +118,10 @@ const str3 =
 const str4 =
     'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
 
-const str =
-    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+// const str =
+//     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.';
+
+// final str = String.fromCharCodes([1575, 1587, 1578, 1585, 1575, 1578, 1688, 1740, 32, 1607, 1575, 1740, 32, 1608, 1601, 1575, 1583, 1575, 1585, 1740, 32, 1605, 1588, 1578, 1585, 1740]);
 
 // const str = '''
 // تجربه مشتری (Customer) به عنوان یکی از عوامل کلیدی در شکل‌گیری وفاداری مشتری شناخته می‌شود. تجربه‌ای یکپارچه و مثبت در تمامی نقاط تماس مشتری با سازمان، نقش مهمی در ارتقاء وفاداری ایفا می‌کند (اشمیت، ۲۰۱۷). این تجربه شامل عناصری همچون سهولت در تعامل، کارایی، لذت و ارزش ادراک‌شده در طول مسیر تعامل مشتری با برند است.
@@ -129,7 +131,11 @@ const str =
 // لم أضف القوى تحرّكت الرئيسية. إيو أي إعمار واحدة قائمة, لم تطوير عرفها جعل. عل لها جسيمة فشكّل التبرعات, أم كان هناك هُزم والكساد. هنا؟ شمال السبب ضرب بل, لكل بل لإعادة بريطانيا. جُل تشكيل والتي عسكرياً ٣٠, أن بتحدّي الدنمارك الكونجرس تحت, أي جهة عرفها اللازمة ماليزيا،.
 // ''';
 
-// const str2 = '''
+const str = '''
+ما‌‌ئده تباری**[1]،** فاطمه محمدی[2]
+''';
+
+// const str = '''
 // مرحباً! أنا بأروح السوق اليوم (الساعة 5).
 // ''';
 
