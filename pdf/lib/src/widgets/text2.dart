@@ -3,7 +3,6 @@ import 'dart:math';
 import '../../pdf.dart';
 import '../shaping/shaping.dart';
 
-import 'annotations.dart';
 import 'geometry.dart';
 import 'text.dart';
 import 'text_style.dart';
@@ -75,6 +74,7 @@ class RichText2 extends Widget {
     var startingPosition = 0.0;
     for (final textSpan in children) {
       final letterSpacing = textSpan.style?.letterSpacing ?? 0.0;
+      final lineSpacing = textSpan.style?.lineSpacing ?? 0.0;
       final fontSize = textSpan.style?.fontSize ?? 1.0;
 
       final spanLines = _layoutText(context, textSpan,
@@ -85,16 +85,17 @@ class RichText2 extends Widget {
       if (spanLines.linesVisual.isEmpty) continue;
 
       if (_lines.isEmpty) {
-        _lines.addAll(spanLines.linesVisual
-            .map((line) => _RichTextLine.single(textSpan, line)));
+        _lines.addAll(spanLines.linesVisual.map((line) =>
+            _RichTextLine.single(textSpan, line, lineSpacing: lineSpacing)));
       } else {
         if (spanLines.linesVisual.first.isNotEmpty) {
-          _lines.last.add(
-              _RichTextShapingOutput(textSpan, spanLines.linesVisual.first));
+          _lines.last.add(_RichTextShapingOutput(
+            textSpan,
+            spanLines.linesVisual.first,
+          ));
         }
-        _lines.addAll(spanLines.linesVisual
-            .skip(1)
-            .map((line) => _RichTextLine.single(textSpan, line)));
+        _lines.addAll(spanLines.linesVisual.skip(1).map((line) =>
+            _RichTextLine.single(textSpan, line, lineSpacing: lineSpacing)));
       }
       startingPosition = spanLines.endingLocation * fontSize;
     }
@@ -103,8 +104,8 @@ class RichText2 extends Widget {
         0.0,
         0.0,
         constraintWidth,
-        constraints
-            .constrainHeight(_lines.fold(0.0, (a, b) => a + b.maxHeight)));
+        constraints.constrainHeight(
+            _lines.fold(0.0, (a, b) => a + b.maxHeight + b.lineSpacing)));
   }
 
   LinesShapingOutput _layoutText(Context context, TextSpan textSpan,
@@ -115,8 +116,13 @@ class RichText2 extends Widget {
     final primaryFont = textSpan.style!.font!.getFont(context) as PdfTtfFont;
     final fallbackFonts = textSpan.style!.fontFallback
         .map((font) => font.getFont(context))
-        .cast<PdfTtfFont>()
+        .whereType<PdfTtfFont>()
         .toList();
+
+    if (fallbackFonts.length != textSpan.style!.fontFallback.length) {
+      print(
+          'Some fallback fonts have been removed because they are not TTF: ${textSpan.style!.fontFallback.map((font) => font.getFont(context)).where((font) => font is! PdfTtfFont).map((font) => font.fontName).toList()}');
+    }
 
     return Shaping().shapeLinesWithBreaks(
         textSpan.text ?? '', primaryFont, fallbackFonts,
@@ -160,10 +166,11 @@ class RichText2 extends Widget {
           _foregroundPaint(
               context, item.textSpan.style, x, realY, metrics, letterSpacing);
           x += metrics.advanceWidth + spacing;
-          height = max(height, -itemMetrics.ascent + itemMetrics.descent);
+          height =
+              max(height, (-itemMetrics.ascent + itemMetrics.descent).abs());
         }
       }
-      y -= height;
+      y -= height + line.lineSpacing;
     }
   }
 
@@ -221,11 +228,13 @@ class _RichTextShapingOutput {
 }
 
 class _RichTextLine {
-  _RichTextLine(this.items);
-  _RichTextLine.single(TextSpan textSpan, ShapingOutput shapingOutput)
+  _RichTextLine(this.items, {required this.lineSpacing});
+  _RichTextLine.single(TextSpan textSpan, ShapingOutput shapingOutput,
+      {required this.lineSpacing})
       : items = [_RichTextShapingOutput(textSpan, shapingOutput)];
 
   List<_RichTextShapingOutput> items;
+  double lineSpacing;
 
   void add(_RichTextShapingOutput item) => items.add(item);
 
@@ -250,7 +259,8 @@ class _RichTextLine {
     return widths.fold(0.0, (a, b) => a + b);
   }
 
-  double get maxHeight => allMetrics.fold(0.0, (a, b) => max(a, b.maxHeight));
+  double get maxHeight =>
+      allMetrics.fold(0.0, (a, b) => max(a, b.maxHeight + lineSpacing));
 
   @override
   String toString() => '$_RichTextLine(${items.join('\n\t')})';
