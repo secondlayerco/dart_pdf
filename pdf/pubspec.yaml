@@ -23,7 +23,8 @@ dependencies:
   bidi:
     git:
       url: https://github.com/secondlayerco/dart_bidi
-      ref: "2.0.19-napkin"
+      ref: "2.0.20-napkin"
+    # path: "../../dart_bidi"
   crypto: ^3.0.6
   image: ^4.5.2
   meta: ">=1.3.0 <2.0.0"
