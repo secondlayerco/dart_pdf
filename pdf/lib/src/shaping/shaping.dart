@@ -107,13 +107,32 @@ class ShapingOutput {
 
   static ListVisual<ShapingResult> _compact(ListLogical<ShapingOutput> items,
       {required bool leftToRight}) {
-    final output = ListVisual(items
+    final flattenedResults = ListVisual(items
         .visual(leftToRight: leftToRight)
         .expand((output) => output.resultsVisual)
         .toList());
 
+    if (!leftToRight) {
+      // We need to reverse the spans of consecutive LTR elements
+      final reorderedResults = ListVisual<ShapingResult>([]);
+      final ltrSpan = ListVisual<ShapingResult>([]);
+      for (final result in flattenedResults) {
+        if (!result.leftToRight) {
+          reorderedResults.addAll(ltrSpan.reversed);
+          ltrSpan.clear();
+          reorderedResults.add(result);
+          continue;
+        }
+        ltrSpan.add(result);
+      }
+      reorderedResults.addAll(ltrSpan.reversed);
+      flattenedResults
+        ..clear()
+        ..addAll(reorderedResults);
+    }
+
     final compacted = ListVisual<ShapingResult>.empty();
-    for (final o in output) {
+    for (final o in flattenedResults) {
       if (compacted.isNotEmpty && o.compatible(compacted.last)) {
         compacted.last.append(o);
       } else {
@@ -121,7 +140,7 @@ class ShapingOutput {
       }
     }
 
-    return compacted;
+    return flattenedResults;
   }
 
   final ListVisual<ShapingResult> resultsVisual;
