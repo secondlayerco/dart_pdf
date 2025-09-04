@@ -54,18 +54,15 @@ extension type ListVisual<T>(List<T> list)
 }
 
 class ShapingResult {
-  ShapingResult.fromLogicalOrder(
-      this.textLogical, this.font, this.glyphsLogical,
+  ShapingResult.fromLogicalOrder(this.font, this.glyphsLogical,
       {required this.leftToRight});
 
   ShapingResult.empty(this.font, {required this.leftToRight})
-      : textLogical = ListLogical.empty(),
-        glyphsLogical = ListLogical.empty();
+      : glyphsLogical = ListLogical.empty();
 
   final PdfTtfFont font;
   final bool leftToRight;
 
-  final ListLogical<int> textLogical;
   final ListLogical<GlyphIndex> glyphsLogical;
 
   bool compatible(ShapingResult other) =>
@@ -77,19 +74,14 @@ class ShapingResult {
   List<int> get glyphIndicesLogical =>
       glyphsLogical.map((g) => g.index).toList();
 
-  void appendLogical(int char, GlyphIndex index) {
-    textLogical.add(char);
-    glyphsLogical.add(index);
-  }
-
   void append(ShapingResult other) {
-    textLogical.addAll(other.textLogical);
+    assert(compatible(other), 'It does not make sense to append incompatible results');
     glyphsLogical.addAll(other.glyphsLogical);
   }
 
   @override
   String toString() =>
-      'ShapingResult(leftToRight: $leftToRight, text: $textLogical, font: ${font.fontName}), glyphs: $glyphsLogical)';
+      'ShapingResult(leftToRight: $leftToRight, font: ${font.fontName}), glyphs: $glyphsLogical)';
 }
 
 class ShapingOutput {
@@ -339,7 +331,6 @@ class Shaping {
       _hb.shape(faceFont, buffer);
 
       output.add(ShapingResult.fromLogicalOrder(
-        ListLogical(textAndFont.text.runes.toList()),
         textAndFont.font,
         ListLogical(
           _hb
@@ -444,7 +435,6 @@ class Shaping {
       _hb.shape(faceFont, buffer);
 
       output.add(ShapingResult.fromLogicalOrder(
-        ListLogical(textAndFont.text.runes.toList()),
         textAndFont.font,
         ListLogical(
           _hb

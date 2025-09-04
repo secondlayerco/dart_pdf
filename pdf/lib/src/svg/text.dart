@@ -180,7 +180,6 @@ class SvgText extends SvgOperation {
       canvas.drawGlyphs(
           shapingResult.font,
           fontSize,
-          String.fromCharCodes(shapingResult.textLogical),
           shapingResult.glyphIndicesLogical,
           x,
           0,

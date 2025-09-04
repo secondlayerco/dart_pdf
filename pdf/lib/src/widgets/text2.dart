@@ -85,7 +85,6 @@ class Text2 extends Widget {
         context.canvas.drawGlyphs(
             shaped.font,
             fontSize,
-            String.fromCharCodes(shaped.textLogical),
             glyphIndicesLogical,
             x,
             realY,
@@ -241,7 +240,6 @@ class RichText2 extends Widget {
           context.canvas.drawGlyphs(
               shaped.font,
               fontSize,
-              String.fromCharCodes(shaped.textLogical),
               glyphIndicesLogical,
               x,
               realY,
