@@ -140,7 +140,7 @@ class ShapingOutput {
       }
     }
 
-    return flattenedResults;
+    return compacted;
   }
 
   final ListVisual<ShapingResult> resultsVisual;
