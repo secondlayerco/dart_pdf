@@ -89,14 +89,12 @@ class ShapingResult {
 }
 
 class ShapingOutput {
+  ShapingOutput.empty()
+      : resultsVisual = ListVisual.empty(),
+        leftToRight = true;
+
   ShapingOutput.fromVisualOrder(this.resultsVisual,
       {required this.leftToRight});
-
-  ShapingOutput.fromLogicalOrder(
-      ListLogical<ShapingResult> resultsInLogicalOrder,
-      {required this.leftToRight})
-      : resultsVisual = ListVisual.fromLogical(resultsInLogicalOrder,
-            leftToRight: leftToRight);
 
   factory ShapingOutput.fromShapingOutputs(
       ListLogical<ShapingOutput> outputsInLogicalOrder) {
@@ -173,7 +171,6 @@ class LinesShapingOutput {
   final double startingLocation;
   final double endingLocation;
 
-  // In visual order
   final ListVisual<ShapingOutput> linesVisual;
 
   @override
@@ -277,8 +274,7 @@ class Shaping {
     }
 
     if (text.isEmpty) {
-      return ShapingOutput.fromLogicalOrder(ListLogical.empty(),
-          leftToRight: true);
+      return ShapingOutput.empty();
     }
 
     final primaryFontSubFamily = _getFontSubFamily(primaryFont);
@@ -382,8 +378,7 @@ class Shaping {
     }
 
     if (text.isEmpty) {
-      return ShapingOutput.fromLogicalOrder(ListLogical.empty(),
-          leftToRight: true);
+      return ShapingOutput.empty();
     }
 
     final primaryFontSubFamily = _getFontSubFamily(primaryFont);
