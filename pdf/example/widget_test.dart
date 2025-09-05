@@ -15,11 +15,9 @@
  */
 
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart';
-import 'package:test/test.dart';
 
 // import 'utils.dart';
 
@@ -36,7 +34,8 @@ Font loadFont(String filename) {
 
 void main() async {
   final ttf = loadFont(
-      '../../../secondlayer/napkin-web-client/web/fonts/Roboto/Roboto-Regular.ttf');
+      '../../../secondlayer/napkin-web-client/web/fonts/Geomanist-Complete-Webfont/Geomanist-Regular-Webfont/geomanist-regular-webfont.ttf');
+  // '../../../secondlayer/napkin-web-client/web/fonts/Roboto/Roboto-Regular.ttf');
 
   final ttf2 = loadFont(
       '../../../secondlayer/napkin-web-client/web/fonts/Shantell_Sans/static/ShantellSans-Regular.ttf');
@@ -51,7 +50,7 @@ void main() async {
   pdf = Document(userDocumentID: '1234567890');
 
   pdf.addPage(Page(
-      pageFormat: PdfPageFormat.a4,
+      pageFormat: PdfPageFormat(1104, 1440), //PdfPageFormat.a4,
       build: (Context context) => Stack(children: [
             Positioned(
                 top: 400,
@@ -77,14 +76,15 @@ void main() async {
                     decoration: BoxDecoration(
                       border: Border.all(color: PdfColor.fromHex('#000000')),
                     ),
-                    width: 400,
+                    width: 684,
                     child: RichText2(
-                        textAlign: TextAlign.left,
+                        textAlign: TextAlign.right,
                         text: TextSpan(children: [
                           TextSpan(
                               text: str,
                               style: TextStyle(
-                                  fontSize: 12,
+                                  letterSpacing: 0.3333,
+                                  fontSize: 16,
                                   // decoration: TextDecoration.lineThrough,
                                   font: ttf,
                                   fontFallback: fallbacks)),
@@ -137,6 +137,10 @@ const str4 =
 
 // const str = '''
 // لم أضف القوى تحرّكت الرئيسية. إيو أي إعمار واحدة قائمة, لم تطوير عرفها جعل. عل لها جسيمة فشكّل التبرعات, أم كان هناك هُزم والكساد. هنا؟ شمال السبب ضرب بل, لكل بل لإعادة بريطانيا. جُل تشكيل والتي عسكرياً ٣٠, أن بتحدّي الدنمارك الكونجرس تحت, أي جهة عرفها اللازمة ماليزيا،.
+// ''';
+
+// const str = '''
+// در چشم‌انداز تجاری امروز که به سرعت در حال تغییر است، صرفاً جذب مشتریان کافی نیست؛ بلکه حفظ و ایجاد وفاداری طولانی‌مدت در بین مشتریان به یکی از عوامل کلیدی موفقیت برای سازمان‌ها تبدیل شده است (یان و همکاران، 2023).
 // ''';
 
 const str = '''

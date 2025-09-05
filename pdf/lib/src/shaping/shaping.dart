@@ -219,7 +219,7 @@ class Shaping {
       required double maxWidth,
       required double letterSpacing}) {
     final text = String.fromCharCodes(paragraph.text);
-    final icuOffsets = IcuBinding.getIcuLineBreakOffsets(text);
+    final icuOffsets = IcuBinding.getIcuBreakOffsets(text, IcuBreakType.line);
 
     if (icuOffsets.isEmpty) {
       final shapingOutput = shape(text, primaryFont, fallbackFonts);

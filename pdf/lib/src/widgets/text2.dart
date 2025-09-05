@@ -140,8 +140,9 @@ class RichText2 extends Widget {
 
     // Reversed because of PDF ordering
     for (final line in _lines) {
-      final width = line.width;
-      var x = startX(width);
+      var x = startX(line.width);
+      final lineMetrics = PdfFontMetrics.append(line.allMetrics);
+
       var height = 0.0;
       for (final item in line.items) {
         final fontSize = item.textSpan.style?.fontSize ?? 1.0;
@@ -164,7 +165,7 @@ class RichText2 extends Widget {
               shaped.font, fontSize, glyphIndicesLogical, x, realY,
               charSpace: 0);
           _foregroundPaint(
-              context, item.textSpan.style, x, realY, metrics, letterSpacing);
+              context, item.textSpan.style, x, realY, metrics, lineMetrics, letterSpacing);
           x += metrics.advanceWidth + spacing;
           height =
               max(height, (-itemMetrics.ascent + itemMetrics.descent).abs());
@@ -185,7 +186,8 @@ class RichText2 extends Widget {
     TextStyle? style,
     double xLocation,
     double yLocation,
-    PdfFontMetrics metrics,
+    PdfFontMetrics spanMetrics,
+    PdfFontMetrics lineMetrics,
     double letterSpacing,
   ) {
     if (style == null || style.decoration == null) {
@@ -193,11 +195,11 @@ class RichText2 extends Widget {
     }
 
     if (style.decoration!.contains(TextDecoration.underline)) {
-      final base = metrics.descent / 2;
+      final base = lineMetrics.descent / 2;
       context.canvas.drawLine(
-        xLocation + metrics.effectiveLeft,
+        xLocation + spanMetrics.effectiveLeft,
         yLocation + base,
-        xLocation + metrics.advanceWidth,
+        xLocation + spanMetrics.advanceWidth,
         yLocation + base,
       );
       context.canvas.strokePath();
@@ -206,9 +208,9 @@ class RichText2 extends Widget {
     if (style.decoration!.contains(TextDecoration.lineThrough)) {
       final base = (style.fontSize ?? 1) / 4;
       context.canvas.drawLine(
-        xLocation + metrics.effectiveLeft,
+        xLocation + spanMetrics.effectiveLeft,
         yLocation + base,
-        xLocation + metrics.advanceWidth,
+        xLocation + spanMetrics.advanceWidth,
         yLocation + base,
       );
       context.canvas.strokePath();
@@ -249,14 +251,17 @@ class _RichTextLine {
 
   double get left => allMetrics.firstOrNull?.left ?? 0.0;
   double get width {
-    final widths = items.map((i) {
-      final letterSpacing = i.textSpan.style?.letterSpacing ?? 0.0;
-      final fontSize = i.textSpan.style?.fontSize ?? 1.0;
-      final m =
-          i.shapingOutput.metrics(letterSpacing: letterSpacing) * fontSize;
-      return m.advanceWidth + (m.advanceWidth > 0 ? letterSpacing : 0.0);
-    }).toList();
-    return widths.fold(0.0, (a, b) => a + b);
+    var width = 0.0;
+    for (final item in items) {
+      final fontSize = item.textSpan.style?.fontSize ?? 1.0;
+      final letterSpacing = item.textSpan.style?.letterSpacing ?? 0.0;
+      for (final shaped in item.shapingOutput.resultsVisual) {
+        final metrics = shaped.metrics * fontSize;
+        final spacing = metrics.advanceWidth > 0 ? letterSpacing : 0.0;
+        width += metrics.advanceWidth + spacing;
+      }
+    }
+    return width;
   }
 
   double get maxHeight =>

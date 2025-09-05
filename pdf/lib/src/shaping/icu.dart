@@ -9,24 +9,33 @@ import 'unicode_utils.dart';
 // OSX: brew install icu4c
 // Linux: apt-get install libicu-dev
 
+enum IcuBreakType {
+  character(0),
+  word(1),
+  line(2),
+  sentence(3);
+
+  const IcuBreakType(this._value);
+  final int _value;
+}
+
 //ignore: avoid_classes_with_only_static_members
 abstract class IcuBinding {
   // Returns offsets in terms of String offsets
-  static List<int> getIcuLineBreakOffsets(String text) {
-    final icuBreakOffsets = _getIcuLineBreakOffsetsUTF16(text);
+  static List<int> getIcuBreakOffsets(String text, IcuBreakType type) {
+    final icuBreakOffsets = _getIcuBreakOffsetsUTF16(text, type);
     final mapping = createCodeUnitToStringIndexMap(text);
     return icuBreakOffsets.map((offset) => mapping[offset]).toList();
   }
 
   // Returns offsets in terms of UTF-16 code units.
-  static List<int> _getIcuLineBreakOffsetsUTF16(String text) {
+  static List<int> _getIcuBreakOffsetsUTF16(String text, IcuBreakType type) {
     // Prepare inputs for ICU
     final errorCodePtr = calloc<Int32>();
     final textPtr = text.toNativeUtf16();
 
-    const UBRK_LINE = 2;
     final brkIter = _ubrkOpen(
-      UBRK_LINE,
+      type._value,
       nullptr,
       textPtr.cast<Void>(),
       -1,
