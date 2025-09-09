@@ -28,7 +28,7 @@ void main() async {
   // const str = '洛伦姆·伊普森假文是印刷和排版行业常用的占位文本';
   const str = 'ما‌‌ئده تباری##[123]،** فاطمه محمدی[2]';
   final lines = Shaping().shapeLinesWithBreaks(str, primaryFont, fallbackFonts0,
-      maxWidth: 10.0, letterSpacing: 0.0);
+      startingLocation: 0.0, maxWidth: 10.0, letterSpacing: 0.0);
 
   print(lines);
 
