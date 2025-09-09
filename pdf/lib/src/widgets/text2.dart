@@ -89,10 +89,17 @@ class RichText2 extends Widget {
             _RichTextLine.single(textSpan, line, lineSpacing: lineSpacing)));
       } else {
         if (spanLines.linesVisual.first.isNotEmpty) {
-          _lines.last.add(_RichTextShapingOutput(
-            textSpan,
-            spanLines.linesVisual.first,
-          ));
+          if (_lines.last.firstOrNull?.shapingOutput.leftToRight ?? true) {
+            _lines.last.addLast(_RichTextShapingOutput(
+              textSpan,
+              spanLines.linesVisual.first,
+            ));
+          } else {
+            _lines.last.addFirst(_RichTextShapingOutput(
+              textSpan,
+              spanLines.linesVisual.first,
+            ));
+          }
         }
         _lines.addAll(spanLines.linesVisual.skip(1).map((line) =>
             _RichTextLine.single(textSpan, line, lineSpacing: lineSpacing)));
@@ -238,7 +245,10 @@ class _RichTextLine {
   List<_RichTextShapingOutput> items;
   double lineSpacing;
 
-  void add(_RichTextShapingOutput item) => items.add(item);
+  _RichTextShapingOutput? get firstOrNull => items.firstOrNull;
+
+  void addFirst(_RichTextShapingOutput item) => items.insert(0, item);
+  void addLast(_RichTextShapingOutput item) => items.add(item);
 
   List<PdfFontMetrics> get allMetrics {
     return items

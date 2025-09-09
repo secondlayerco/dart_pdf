@@ -216,9 +216,9 @@ class Shaping {
       required double maxWidth,
       required double letterSpacing}) {
     final text = String.fromCharCodes(paragraph.text);
-    final icuOffsets = IcuBinding.getIcuBreakOffsets(text, IcuBreakType.line);
+    final libeBreakOffsets = IcuBinding.getIcuBreakOffsets(text, IcuBreakType.line);
 
-    if (icuOffsets.isEmpty) {
+    if (libeBreakOffsets.isEmpty) {
       final shapingOutput = shape(text, primaryFont, fallbackFonts);
       return LinesShapingOutput.fromVisualOrder(
         ListVisual.single(shapingOutput),
@@ -228,18 +228,18 @@ class Shaping {
       );
     }
 
-    if (icuOffsets.first != 0) {
-      icuOffsets.insert(0, 0);
+    if (libeBreakOffsets.first != 0) {
+      libeBreakOffsets.insert(0, 0);
     }
 
     final lines = ListVisual<ShapingOutput>.empty();
     final currentLine = ListLogical<ShapingOutput>.empty();
     var currentWidth = startingLocation;
-    for (var i = 0; i < icuOffsets.length - 1; i++) {
+    for (var i = 0; i < libeBreakOffsets.length - 1; i++) {
       final subString =
-          paragraph.text.sublist(icuOffsets[i], icuOffsets[i + 1]);
+          paragraph.text.sublist(libeBreakOffsets[i], libeBreakOffsets[i + 1]);
       final embeddingLevels =
-          paragraph.embeddingLevels.sublist(icuOffsets[i], icuOffsets[i + 1]);
+          paragraph.embeddingLevels.sublist(libeBreakOffsets[i], libeBreakOffsets[i + 1]);
       final shapingOutput = shape2(
           subString, embeddingLevels, primaryFont, fallbackFonts,
           leftToRight: paragraph.isLeftToRight);
