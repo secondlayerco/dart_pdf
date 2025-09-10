@@ -70,7 +70,8 @@ class SvgText extends SvgOperation {
     final shapingOutput =
         Shaping().shape(text, pdfFont, painter.fallbackFontsTtf);
 
-    final metrics = shapingOutput.metrics() * _brush.fontSize!.sizeValue;
+    final metrics =
+        shapingOutput.metrics(letterSpacing: 0.0) * _brush.fontSize!.sizeValue;
 
     var baselineOffset = 0.0;
     // Only ideographic is supported
@@ -184,7 +185,8 @@ class SvgText extends SvgOperation {
           x,
           0,
           mode: mode);
-      x += shapingResult.metrics.advanceWidth * fontSize;
+      x += shapingResult.metrics(letterSpacing: 0.0).advanceWidth *
+          fontSize;
     }
   }
 

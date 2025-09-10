@@ -160,20 +160,22 @@ class RichText2 extends Widget {
           currentColor = color;
         }
 
-        final itemMetrics =
-            item.shapingOutput.metrics(letterSpacing: letterSpacing) * fontSize;
+        final itemMetrics = item.shapingOutput
+                .metrics(letterSpacing: letterSpacing / fontSize) *
+            fontSize;
 
         final realY = y - itemMetrics.ascent;
         for (final shaped in item.shapingOutput.resultsVisual) {
-          final metrics = shaped.metrics * fontSize;
-          final spacing = metrics.advanceWidth > 0 ? letterSpacing : 0.0;
+          final metrics =
+              shaped.metrics(letterSpacing: letterSpacing / fontSize) *
+                  fontSize;
           final glyphIndicesLogical = shaped.glyphIndicesLogical;
           context.canvas.drawGlyphs(
               shaped.font, fontSize, glyphIndicesLogical, x, realY,
-              charSpace: 0);
-          _foregroundPaint(
-              context, item.textSpan.style, x, realY, metrics, lineMetrics, letterSpacing);
-          x += metrics.advanceWidth + spacing;
+              charSpace: letterSpacing);
+          _foregroundPaint(context, item.textSpan.style, x, realY, metrics,
+              lineMetrics, letterSpacing);
+          x += metrics.advanceWidth;
           height =
               max(height, (-itemMetrics.ascent + itemMetrics.descent).abs());
         }
@@ -266,9 +268,9 @@ class _RichTextLine {
       final fontSize = item.textSpan.style?.fontSize ?? 1.0;
       final letterSpacing = item.textSpan.style?.letterSpacing ?? 0.0;
       for (final shaped in item.shapingOutput.resultsVisual) {
-        final metrics = shaped.metrics * fontSize;
-        final spacing = metrics.advanceWidth > 0 ? letterSpacing : 0.0;
-        width += metrics.advanceWidth + spacing;
+        final metrics =
+            shaped.metrics(letterSpacing: letterSpacing / fontSize) * fontSize;
+        width += metrics.advanceWidth;
       }
     }
     return width;

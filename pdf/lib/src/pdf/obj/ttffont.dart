@@ -234,6 +234,19 @@ class PdfTtfFont extends PdfFont {
   PdfFontMetrics glyphIndexMetrics(GlyphIndex glyphIndex) =>
       font.glyphInfoMap[glyphIndex.index] ?? PdfFontMetrics.zero;
 
+  PdfFontMetrics glyphIndexMetricsWithLetterSpacing(
+      GlyphIndex glyphIndex, double letterSpacing) {
+    final metrics = font.glyphInfoMap[glyphIndex.index];
+    if (metrics == null) {
+      return PdfFontMetrics.zero;
+    }
+    if (metrics.advanceWidth <= 0) {
+      return metrics;
+    }
+
+    return metrics.copyWith(advanceWidth: metrics.advanceWidth + letterSpacing);
+  }
+
   @override
   bool isRuneSupported(int charCode) {
     return font.charToGlyphIndexMap.containsKey(charCode);

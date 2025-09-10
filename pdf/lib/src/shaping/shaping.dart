@@ -72,8 +72,9 @@ class ShapingResult {
   bool compatible(ShapingResult other) =>
       leftToRight == other.leftToRight && font == other.font;
 
-  PdfFontMetrics get metrics => PdfFontMetrics.append(
-      glyphsLogical.map((g) => font.glyphIndexMetrics(g)));
+  PdfFontMetrics metrics({required double letterSpacing}) =>
+      PdfFontMetrics.append(glyphsLogical.map(
+          (g) => font.glyphIndexMetricsWithLetterSpacing(g, letterSpacing)));
 
   List<int> get glyphIndicesLogical =>
       glyphsLogical.map((g) => g.index).toList();
@@ -150,9 +151,11 @@ class ShapingOutput {
   IterableLogical<ShapingResult> get resultsLogical =>
       resultsVisual.logical(leftToRight: leftToRight);
 
-  PdfFontMetrics metrics({double letterSpacing = 0}) =>
-      PdfFontMetrics.append(resultsVisual.map((sr) => sr.metrics),
-          letterSpacing: letterSpacing);
+  PdfFontMetrics metrics({required double letterSpacing}) =>
+      PdfFontMetrics.append(
+          resultsVisual.map((sr) => sr.metrics(letterSpacing: letterSpacing)),
+          // We already add letterSpacing when calling metrics, we don't need to add it again.
+          letterSpacing: 0.0);
 
   List<int> get glyphIndicesVisual =>
       resultsVisual.expand((result) => result.glyphIndicesLogical).toList();
