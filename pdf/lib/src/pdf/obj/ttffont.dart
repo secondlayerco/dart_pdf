@@ -43,6 +43,7 @@ class PdfTtfFont extends PdfFont {
     unicodeCMap = PdfUnicodeCmap(pdfDocument, protect);
     descriptor = PdfFontDescriptor(this, file);
     widthsObject = PdfObject<PdfArray>(pdfDocument, params: PdfArray());
+    cidToGidMapStream = PdfObjectStream(pdfDocument, isBinary: true);
 
     // By default the font is not used
     _setInUse(false);
@@ -54,7 +55,7 @@ class PdfTtfFont extends PdfFont {
     unicodeCMap.inUse = s;
     descriptor.inUse = s;
     widthsObject.inUse = s;
-    cidToGidMapStream?.inUse = s;
+    cidToGidMapStream.inUse = s;
   }
 
   @override
@@ -68,7 +69,7 @@ class PdfTtfFont extends PdfFont {
 
   late PdfObject<PdfArray> widthsObject;
 
-  PdfObjectStream? cidToGidMapStream;
+  late PdfObjectStream cidToGidMapStream;
 
   final TtfParser font;
 
@@ -168,7 +169,6 @@ class PdfTtfFont extends PdfFont {
     // Adobe Acrobat requires either /Identity or a binary stream (not an array)
     // Each 2 bytes in the stream represent the GID for that CID
     final invertedIndex = _invertGlyphIndex();
-    cidToGidMapStream = PdfObjectStream(pdfDocument, isBinary: true);
     final cidToGidMapData = Uint8List(invertedIndex.length * 2);
     final cidToGidMapBytes = cidToGidMapData.buffer.asByteData();
 
@@ -176,8 +176,8 @@ class PdfTtfFont extends PdfFont {
       cidToGidMapBytes.setUint16(i * 2, invertedIndex[i]);
     }
 
-    cidToGidMapStream!.buf.putBytes(cidToGidMapData);
-    return cidToGidMapStream!.ref();
+    cidToGidMapStream.buf.putBytes(cidToGidMapData);
+    return cidToGidMapStream.ref();
   }
 
   @override
