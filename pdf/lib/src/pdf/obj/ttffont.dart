@@ -176,7 +176,7 @@ class PdfTtfFont extends PdfFont {
     stream.inUse = true; // Mark as used
 
     // Add to document objects OUTSIDE of iteration
-    pdfDocument.pdfObjectList.add(stream);
+    pdfDocument.objects.add(stream);
 
     return stream.ref();
   }
