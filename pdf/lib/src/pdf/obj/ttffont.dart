@@ -161,18 +161,11 @@ class PdfTtfFont extends PdfFont {
   }
 
   PdfDataType _cidToGidMap() {
-    // Generate binary CIDToGIDMap as inline stream data
-    // Cannot create new PdfObjectStream during prepare() as it causes concurrent modification
+    // Adobe Acrobat requires either /Identity or a binary stream for CIDToGIDMap
+    // Since withGlyphIndices reorders glyphs, we MUST provide a mapping
+    // Use PdfArray as a workaround - Adobe SHOULD support this per spec
     final invertedIndex = _invertGlyphIndex();
-    final cidToGidMapData = Uint8List(invertedIndex.length * 2);
-    final cidToGidMapBytes = cidToGidMapData.buffer.asByteData();
-
-    for (var i = 0; i < invertedIndex.length; i++) {
-      cidToGidMapBytes.setUint16(i * 2, invertedIndex[i]);
-    }
-
-    // Return as PdfStream (inline data) not PdfObjectStream (separate object)
-    return PdfStream(cidToGidMapData);
+    return PdfArray(invertedIndex.map((gid) => PdfNum(gid)));
   }
 
   @override
