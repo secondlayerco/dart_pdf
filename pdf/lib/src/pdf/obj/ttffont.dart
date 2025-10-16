@@ -44,6 +44,11 @@ class PdfTtfFont extends PdfFont {
     descriptor = PdfFontDescriptor(this, file);
     widthsObject = PdfObject<PdfArray>(pdfDocument, params: PdfArray());
 
+    // Create CIDToGIDMap stream for Type0 fonts (unicode) to avoid concurrent modification
+    if (font.unicode) {
+      cidToGidMapStream = PdfObjectStream(pdfDocument, isBinary: true);
+    }
+
     // By default the font is not used
     _setInUse(false);
   }
@@ -125,9 +130,6 @@ class PdfTtfFont extends PdfFont {
   }
 
   void _buildType0(PdfDict params) {
-    // Create CIDToGIDMap stream early, before any iteration
-    cidToGidMapStream ??= PdfObjectStream(pdfDocument, isBinary: true);
-
     _buildCmap();
 
     int charMin;
