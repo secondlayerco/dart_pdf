@@ -161,10 +161,24 @@ class PdfTtfFont extends PdfFont {
   }
 
   PdfDataType _cidToGidMap() {
-    // Use /Identity for CIDToGIDMap
-    // Adobe Acrobat supports /Identity which means CID equals GID
-    // This avoids creating a new object during prepare() which causes concurrent modification
-    return const PdfName('/Identity');
+    // Generate binary CIDToGIDMap data first (before creating stream object)
+    final invertedIndex = _invertGlyphIndex();
+    final cidToGidMapData = Uint8List(invertedIndex.length * 2);
+    final cidToGidMapBytes = cidToGidMapData.buffer.asByteData();
+
+    for (var i = 0; i < invertedIndex.length; i++) {
+      cidToGidMapBytes.setUint16(i * 2, invertedIndex[i]);
+    }
+
+    // Create stream with data already in it
+    final stream = PdfObjectStream(pdfDocument, isBinary: true);
+    stream.buf.putBytes(cidToGidMapData);
+    stream.inUse = true; // Mark as used
+
+    // Add to document objects OUTSIDE of iteration
+    pdfDocument.pdfObjectList.add(stream);
+
+    return stream.ref();
   }
 
   @override
