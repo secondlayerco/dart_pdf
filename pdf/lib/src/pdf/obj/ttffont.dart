@@ -161,7 +161,8 @@ class PdfTtfFont extends PdfFont {
   }
 
   PdfDataType _cidToGidMap() {
-    // Generate binary CIDToGIDMap data first (before creating stream object)
+    // Generate binary CIDToGIDMap as inline stream data
+    // Cannot create new PdfObjectStream during prepare() as it causes concurrent modification
     final invertedIndex = _invertGlyphIndex();
     final cidToGidMapData = Uint8List(invertedIndex.length * 2);
     final cidToGidMapBytes = cidToGidMapData.buffer.asByteData();
@@ -170,15 +171,8 @@ class PdfTtfFont extends PdfFont {
       cidToGidMapBytes.setUint16(i * 2, invertedIndex[i]);
     }
 
-    // Create stream with data already in it
-    final stream = PdfObjectStream(pdfDocument, isBinary: true);
-    stream.buf.putBytes(cidToGidMapData);
-    stream.inUse = true; // Mark as used
-
-    // Add to document objects OUTSIDE of iteration
-    pdfDocument.objects.add(stream);
-
-    return stream.ref();
+    // Return as PdfStream (inline data) not PdfObjectStream (separate object)
+    return PdfStream(cidToGidMapData);
   }
 
   @override
