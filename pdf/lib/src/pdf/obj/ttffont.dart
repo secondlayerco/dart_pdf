@@ -43,7 +43,6 @@ class PdfTtfFont extends PdfFont {
     unicodeCMap = PdfUnicodeCmap(pdfDocument, protect);
     descriptor = PdfFontDescriptor(this, file);
     widthsObject = PdfObject<PdfArray>(pdfDocument, params: PdfArray());
-    cidToGidMapStream = PdfObjectStream(pdfDocument, isBinary: true);
 
     // By default the font is not used
     _setInUse(false);
@@ -55,7 +54,7 @@ class PdfTtfFont extends PdfFont {
     unicodeCMap.inUse = s;
     descriptor.inUse = s;
     widthsObject.inUse = s;
-    cidToGidMapStream.inUse = s;
+    cidToGidMapStream?.inUse = s;
   }
 
   @override
@@ -69,7 +68,7 @@ class PdfTtfFont extends PdfFont {
 
   late PdfObject<PdfArray> widthsObject;
 
-  late PdfObjectStream cidToGidMapStream;
+  PdfObjectStream? cidToGidMapStream;
 
   final TtfParser font;
 
@@ -126,6 +125,9 @@ class PdfTtfFont extends PdfFont {
   }
 
   void _buildType0(PdfDict params) {
+    // Create CIDToGIDMap stream early, before any iteration
+    cidToGidMapStream ??= PdfObjectStream(pdfDocument, isBinary: true);
+
     _buildCmap();
 
     int charMin;
@@ -176,8 +178,8 @@ class PdfTtfFont extends PdfFont {
       cidToGidMapBytes.setUint16(i * 2, invertedIndex[i]);
     }
 
-    cidToGidMapStream.buf.putBytes(cidToGidMapData);
-    return cidToGidMapStream.ref();
+    cidToGidMapStream!.buf.putBytes(cidToGidMapData);
+    return cidToGidMapStream!.ref();
   }
 
   @override
