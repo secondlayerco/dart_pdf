@@ -84,7 +84,7 @@ class TtfWriter {
   }
 
   /// Write this list of glyphs
-  Uint8List withGlyphIndices(TtfParser font, List<int> glyphIndices, Set<int> usefulGlyphs) {
+  Uint8List withGlyphIndices(TtfParser font, List<int> usedGlyphIndices, {required bool identityCID}) {
     final tables = <String, Uint8List>{};
     final tablesLength = <String, int>{};
 
@@ -92,6 +92,9 @@ class TtfWriter {
     final glyphsMap = <int, TtfGlyphInfo>{};
     final overflow = <int>{};
     final compounds = <int, int>{};
+
+    final maxUsedGlyphIndex = usedGlyphIndices.fold(0, math.max);
+    final glyphIndices = identityCID ? List.generate(maxUsedGlyphIndex + 1, (index) => index) : [...usedGlyphIndices];
 
     for (final glyphIndex in glyphIndices) {
       if (glyphIndex >= ttf.glyphOffsets.length) {
@@ -141,17 +144,12 @@ class TtfWriter {
 
     // update compound indices
     for (final glyph in glyphsInfo) {
-      if (glyph.compounds.isNotEmpty) {
-        _updateCompoundGlyph(font, glyph, compounds);
-      }
+      if (glyph.compounds.isEmpty) continue;
+      _updateCompoundGlyph(font, glyph, compounds);
     }
-
-    // Add all compound glyphs to usefulGlyphs
-    usefulGlyphs.addAll(compounds.keys);
 
     var glyphsTableLength = 0;
     for (final glyph in glyphsInfo) {
-      if (!usefulGlyphs.contains(glyph.index)) continue;
       glyphsTableLength = _wordAlign(glyphsTableLength + glyph.data.lengthInBytes);
     }
 
@@ -173,7 +171,6 @@ class TtfWriter {
       final loca = tables[TtfParser.loca_table]!.buffer.asByteData();
       var index = 0;
       for (final glyph in glyphsInfo) {
-        final indexToWrite = usefulGlyphs.contains(glyph.index) ? offset : 0;
         if (ttf.indexToLocFormat == 0) {
           loca.setUint16(index, offset ~/ 2);
           index += 2;
@@ -181,10 +178,8 @@ class TtfWriter {
           loca.setUint32(index, offset);
           index += 4;
         }
-        if (usefulGlyphs.contains(glyph.index)) {
-          glyphsTable.setAll(offset, glyph.data);
-          offset = _wordAlign(offset + glyph.data.lengthInBytes);
-        }
+        glyphsTable.setAll(offset, glyph.data);
+        offset = _wordAlign(offset + glyph.data.lengthInBytes);
       }
       if (ttf.indexToLocFormat == 0) {
         loca.setUint16(index, offset ~/ 2);
@@ -261,7 +256,7 @@ class TtfWriter {
       cmapData.setUint32(20, 1); // Table language
       cmapData.setUint32(24, 1); // numGroups
       cmapData.setUint32(28, 32); // startCharCode
-      cmapData.setUint32(32, usefulGlyphs.fold<int>(0, math.max) + 31); //; glyphIndices.length + 31); // // endCharCode
+      cmapData.setUint32(32, glyphIndices.length + 31); // // endCharCode
       cmapData.setUint32(36, 0); // startGlyphID
 
       tables[TtfParser.cmap_table] = cmap;

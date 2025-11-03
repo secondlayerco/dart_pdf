@@ -125,7 +125,7 @@ class PdfTtfFont extends PdfFont {
     int charMax;
 
     final ttfWriter = TtfWriter(font);
-    final data = ttfWriter.withGlyphIndices(font, _glyphIndices, _usedGlyphs);
+    final data = ttfWriter.withGlyphIndices(font, _glyphIndices, identityCID: _cidToGidMapType == CIDToGIDMapType.identity);
     file.buf.putBytes(data);
     file.params['/Length1'] = PdfNum(data.length);
 
@@ -155,7 +155,7 @@ class PdfTtfFont extends PdfFont {
 
     if (_cidToGidMapType == CIDToGIDMapType.identity) {
       charMin = 0;
-      charMax = _usedGlyphs.fold<int>(0, max);
+      charMax = _glyphIndices.fold<int>(0, max);
       for (var i = charMin; i <= charMax; i++) {
         widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(i)).advanceWidth * 1000.0).toInt()));
       }
@@ -193,7 +193,6 @@ class PdfTtfFont extends PdfFont {
     }
   }
 
-  final Set<int> _usedGlyphs = {};
   final List<int> _glyphIndices = [];
 
   void _buildCmap() {
@@ -226,21 +225,12 @@ class PdfTtfFont extends PdfFont {
   }
 
   int _glyphIndexToMapIndex(int glyphIndex) {
-    _usedGlyphs.add(glyphIndex);
-    if (_cidToGidMapType == CIDToGIDMapType.identity) {
-      if (glyphIndex >= _glyphIndices.length) {
-        _glyphIndices.addAll(List.generate(glyphIndex - _glyphIndices.length + 1, (index) => index + _glyphIndices.length));
-        assert(_glyphIndices.length == glyphIndex + 1);
-      }
-      return glyphIndex;
-    }
-
     var indexInMap = _glyphIndices.indexOf(glyphIndex);
     if (indexInMap == -1) {
       indexInMap = _glyphIndices.length;
       _glyphIndices.add(glyphIndex);
     }
-    return indexInMap;
+    return _cidToGidMapType == CIDToGIDMapType.identity ? glyphIndex : indexInMap;
   }
 
   @override
