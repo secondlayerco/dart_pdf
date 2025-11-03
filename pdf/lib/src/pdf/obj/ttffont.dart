@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import 'dart:math';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import '../../shaping/shaping.dart';
@@ -35,6 +35,9 @@ import 'font_descriptor.dart';
 import 'object.dart';
 import 'object_stream.dart';
 import 'unicode_cmap.dart';
+
+// We can support two types of CIDToGIDMap: identity and Map. map is better but it looks that identity is better supported by all viewers (e.g edge viewer)
+enum CIDToGIDMapType { identity, map }
 
 class PdfTtfFont extends PdfFont {
   /// Constructs a [PdfTtfFont]
@@ -57,6 +60,8 @@ class PdfTtfFont extends PdfFont {
     descriptor.inUse = s;
     widthsObject.inUse = s;
   }
+
+  final CIDToGIDMapType _cidToGidMapType = CIDToGIDMapType.identity;
 
   @override
   String get subtype => font.unicode ? '/Type0' : super.subtype;
@@ -91,16 +96,6 @@ class PdfTtfFont extends PdfFont {
       return PdfFontMetrics.zero;
     }
 
-    // if (useBidi && bidi.isArabicDiacriticValue(charCode)) {
-    //   final metric = font.glyphInfoMap[g] ?? PdfFontMetrics.zero;
-    //   return metric.copyWith(advanceWidth: 0);
-    // }
-
-    // if (useArabic && arabic.isArabicDiacriticValue(charCode)) {
-    //   final metric = font.glyphInfoMap[g] ?? PdfFontMetrics.zero;
-    //   return metric.copyWith(advanceWidth: 0);
-    // }
-
     return font.glyphInfoMap[g] ?? PdfFontMetrics.zero;
   }
 
@@ -116,8 +111,7 @@ class PdfTtfFont extends PdfFont {
     charMin = 32;
     charMax = 255;
     for (var i = charMin; i <= charMax; i++) {
-      widthsObject.params
-          .add(PdfNum((glyphMetrics(i).advanceWidth * 1000.0).toInt()));
+      widthsObject.params.add(PdfNum((glyphMetrics(i).advanceWidth * 1000.0).toInt()));
     }
     params['/FirstChar'] = PdfNum(charMin);
     params['/LastChar'] = PdfNum(charMax);
@@ -144,7 +138,7 @@ class PdfTtfFont extends PdfFont {
         const PdfNum(0),
         widthsObject.ref(),
       ]),
-      '/CIDToGIDMap': _cidToGidMap(),
+      '/CIDToGIDMap': _cidToGidMapType == CIDToGIDMapType.identity ? const PdfName('/Identity') : _cidToGidMap(),
       '/DW': const PdfNum(1000),
       '/Subtype': const PdfName('/CIDFontType2'),
       '/CIDSystemInfo': PdfDict.values({
@@ -162,15 +156,14 @@ class PdfTtfFont extends PdfFont {
     charMin = 0;
     charMax = _glyphIndex.length - 1;
     for (var i = charMin; i <= charMax; i++) {
-      widthsObject.params.add(PdfNum(
-          (glyphIndexMetrics(GlyphIndex(_glyphIndex[i])).advanceWidth * 1000.0)
-              .toInt()));
+      widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(_glyphIndex[i])).advanceWidth * 1000.0).toInt()));
     }
   }
 
-  PdfDataType _cidToGidMap() => PdfArray(_invertGlyphIndex()
-      .map((value) => [PdfNum((value >> 16) & 0xFFFF), PdfNum(value & 0xFFFF)])
-      .expand((value) => value));
+  PdfDataType _cidToGidMap() {
+    assert(_cidToGidMapType == CIDToGIDMapType.map);
+    return PdfArray(_invertGlyphIndex().map((value) => [PdfNum((value >> 16) & 0xFFFF), PdfNum(value & 0xFFFF)]).expand((value) => value));
+  }
 
   @override
   void prepare() {
@@ -188,10 +181,7 @@ class PdfTtfFont extends PdfFont {
   void _buildCmap() {
     final glyphNotFound = '?'.runes.first;
     for (var i = 0; i < _glyphIndex.length; i++) {
-      final char = font.charToGlyphIndexMap.entries
-          .where((entry) => entry.value == _glyphIndex[i])
-          .map((e) => e.key)
-          .firstOrNull;
+      final char = font.charToGlyphIndexMap.entries.where((entry) => entry.value == _glyphIndex[i]).map((e) => e.key).firstOrNull;
       unicodeCMap.cmap[i] = char ?? glyphNotFound;
     }
   }
@@ -208,17 +198,30 @@ class PdfTtfFont extends PdfFont {
   void putGlyphs(PdfStream stream, List<int> glyphIndices) {
     _setInUse(true);
     stream.putByte(0x3c);
+    final indices = <int>[];
     for (final glyphIndex in glyphIndices) {
-      var indexInMap = _glyphIndex.indexOf(glyphIndex);
-      if (indexInMap == -1) {
-        indexInMap = _glyphIndex.length;
-        _glyphIndex.add(glyphIndex);
+      final indexInMap = _glyphIndexToMapIndex(glyphIndex);
+      stream.putBytes(latin1.encode(indexInMap.toRadixString(16).padLeft(4, '0')));
+      indices.add(indexInMap);
+    }
+    stream.putByte(0x3e);
+  }
+
+  int _glyphIndexToMapIndex(int glyphIndex) {
+    if (_cidToGidMapType == CIDToGIDMapType.identity) {
+      if (glyphIndex >= _glyphIndex.length) {
+        _glyphIndex.addAll(List.generate(glyphIndex - _glyphIndex.length + 1, (index) => index + _glyphIndex.length));
+        assert(_glyphIndex.length == glyphIndex + 1);
       }
-      stream
-          .putBytes(latin1.encode(indexInMap.toRadixString(16).padLeft(4, '0')));
+      return glyphIndex;
     }
 
-    stream.putByte(0x3e);
+    var indexInMap = _glyphIndex.indexOf(glyphIndex);
+    if (indexInMap == -1) {
+      indexInMap = _glyphIndex.length;
+      _glyphIndex.add(glyphIndex);
+    }
+    return indexInMap;
   }
 
   @override
@@ -228,14 +231,11 @@ class PdfTtfFont extends PdfFont {
   }
 
   @override
-  PdfFontMetrics stringMetrics(String s, {double letterSpacing = 0}) =>
-      Shaping().shape(s, this, []).metrics(letterSpacing: letterSpacing);
+  PdfFontMetrics stringMetrics(String s, {double letterSpacing = 0}) => Shaping().shape(s, this, []).metrics(letterSpacing: letterSpacing);
 
-  PdfFontMetrics glyphIndexMetrics(GlyphIndex glyphIndex) =>
-      font.glyphInfoMap[glyphIndex.index] ?? PdfFontMetrics.zero;
+  PdfFontMetrics glyphIndexMetrics(GlyphIndex glyphIndex) => font.glyphInfoMap[glyphIndex.index] ?? PdfFontMetrics.zero;
 
-  PdfFontMetrics glyphIndexMetricsWithLetterSpacing(
-      GlyphIndex glyphIndex, double letterSpacing) {
+  PdfFontMetrics glyphIndexMetricsWithLetterSpacing(GlyphIndex glyphIndex, double letterSpacing) {
     final metrics = font.glyphInfoMap[glyphIndex.index];
     if (metrics == null) {
       return PdfFontMetrics.zero;
