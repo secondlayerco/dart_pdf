@@ -125,7 +125,7 @@ class PdfTtfFont extends PdfFont {
     int charMax;
 
     final ttfWriter = TtfWriter(font);
-    final data = ttfWriter.withGlyphIndices(font, _glyphIndex);
+    final data = ttfWriter.withGlyphIndices(font, _glyphIndices, _usedGlyphs);
     file.buf.putBytes(data);
     file.params['/Length1'] = PdfNum(data.length);
 
@@ -153,16 +153,33 @@ class PdfTtfFont extends PdfFont {
     params['/DescendantFonts'] = PdfArray([descendantFont]);
     params['/ToUnicode'] = unicodeCMap.ref();
 
-    charMin = 0;
-    charMax = _glyphIndex.length - 1;
-    for (var i = charMin; i <= charMax; i++) {
-      widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(_glyphIndex[i])).advanceWidth * 1000.0).toInt()));
+    if (_cidToGidMapType == CIDToGIDMapType.identity) {
+      charMin = 0;
+      charMax = _usedGlyphs.fold<int>(0, max);
+      for (var i = charMin; i <= charMax; i++) {
+        widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(i)).advanceWidth * 1000.0).toInt()));
+      }
+    } else {
+      charMin = 0;
+      charMax = _glyphIndices.length - 1;
+      for (var i = charMin; i <= charMax; i++) {
+        widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(_glyphIndices[i])).advanceWidth * 1000.0).toInt()));
+      }
     }
   }
 
   PdfDataType _cidToGidMap() {
     assert(_cidToGidMapType == CIDToGIDMapType.map);
     return PdfArray(_invertGlyphIndex().map((value) => [PdfNum((value >> 16) & 0xFFFF), PdfNum(value & 0xFFFF)]).expand((value) => value));
+  }
+
+  List<int> _invertGlyphIndex() {
+    assert(_cidToGidMapType == CIDToGIDMapType.map);
+    final inverted = List.filled(_glyphIndices.fold(0, max) + 1, 0);
+    for (var i = 0; i < _glyphIndices.length; i++) {
+      inverted[_glyphIndices[i]] = i;
+    }
+    return inverted;
   }
 
   @override
@@ -176,22 +193,23 @@ class PdfTtfFont extends PdfFont {
     }
   }
 
-  final List<int> _glyphIndex = [];
+  final Set<int> _usedGlyphs = {};
+  final List<int> _glyphIndices = [];
 
   void _buildCmap() {
     final glyphNotFound = '?'.runes.first;
-    for (var i = 0; i < _glyphIndex.length; i++) {
-      final char = font.charToGlyphIndexMap.entries.where((entry) => entry.value == _glyphIndex[i]).map((e) => e.key).firstOrNull;
+    if (_cidToGidMapType == CIDToGIDMapType.identity) {
+      for (var i = 0; i < _glyphIndices.length; i++) {
+        final char = font.charToGlyphIndexMap.entries.where((entry) => entry.value == _glyphIndices[i]).map((e) => e.key).firstOrNull;
+        unicodeCMap.cmap[_glyphIndices[i]] = char ?? glyphNotFound;
+      }
+      return;
+    }
+
+    for (var i = 0; i < _glyphIndices.length; i++) {
+      final char = font.charToGlyphIndexMap.entries.where((entry) => entry.value == _glyphIndices[i]).map((e) => e.key).firstOrNull;
       unicodeCMap.cmap[i] = char ?? glyphNotFound;
     }
-  }
-
-  List<int> _invertGlyphIndex() {
-    final inverted = List.filled(_glyphIndex.fold(0, max) + 1, 0);
-    for (var i = 0; i < _glyphIndex.length; i++) {
-      inverted[_glyphIndex[i]] = i;
-    }
-    return inverted;
   }
 
   @override
@@ -208,18 +226,19 @@ class PdfTtfFont extends PdfFont {
   }
 
   int _glyphIndexToMapIndex(int glyphIndex) {
+    _usedGlyphs.add(glyphIndex);
     if (_cidToGidMapType == CIDToGIDMapType.identity) {
-      if (glyphIndex >= _glyphIndex.length) {
-        _glyphIndex.addAll(List.generate(glyphIndex - _glyphIndex.length + 1, (index) => index + _glyphIndex.length));
-        assert(_glyphIndex.length == glyphIndex + 1);
+      if (glyphIndex >= _glyphIndices.length) {
+        _glyphIndices.addAll(List.generate(glyphIndex - _glyphIndices.length + 1, (index) => index + _glyphIndices.length));
+        assert(_glyphIndices.length == glyphIndex + 1);
       }
       return glyphIndex;
     }
 
-    var indexInMap = _glyphIndex.indexOf(glyphIndex);
+    var indexInMap = _glyphIndices.indexOf(glyphIndex);
     if (indexInMap == -1) {
-      indexInMap = _glyphIndex.length;
-      _glyphIndex.add(glyphIndex);
+      indexInMap = _glyphIndices.length;
+      _glyphIndices.add(glyphIndex);
     }
     return indexInMap;
   }
