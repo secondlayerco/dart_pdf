@@ -90,11 +90,13 @@ class TtfWriter {
 
     // Create the glyphs table
     final glyphsMap = <int, TtfGlyphInfo>{};
-    final overflow = <int>{};
     final compounds = <int, int>{};
 
     final maxUsedGlyphIndex = usedGlyphIndices.fold(0, math.max);
     final glyphIndices = identityCID ? List.generate(maxUsedGlyphIndex + 1, (index) => index) : [...usedGlyphIndices];
+
+    // In the end, we save a lot of space by writing only the used (and compounds) glyphs to the glyphs table
+    final glyphIndicesToWrite = {...usedGlyphIndices};
 
     for (final glyphIndex in glyphIndices) {
       if (glyphIndex >= ttf.glyphOffsets.length) {
@@ -111,7 +113,7 @@ class TtfWriter {
           final glyph = glyphSize != 0 ? ttf.readGlyph(glyphIndex).copy() : TtfGlyphInfo(glyphIndex, Uint8List(0), const <int>[]);
           for (final g in glyph.compounds) {
             compounds[g] = -1;
-            overflow.add(g);
+            glyphIndicesToWrite.add(g);
             addGlyph(g);
           }
           glyphsMap[glyphIndex] = glyph;
@@ -150,6 +152,7 @@ class TtfWriter {
 
     var glyphsTableLength = 0;
     for (final glyph in glyphsInfo) {
+      if (!glyphIndicesToWrite.contains(glyph.index)) continue;
       glyphsTableLength = _wordAlign(glyphsTableLength + glyph.data.lengthInBytes);
     }
 
@@ -178,8 +181,10 @@ class TtfWriter {
           loca.setUint32(index, offset);
           index += 4;
         }
-        glyphsTable.setAll(offset, glyph.data);
-        offset = _wordAlign(offset + glyph.data.lengthInBytes);
+        if (glyphIndicesToWrite.contains(glyph.index)) {
+          glyphsTable.setAll(offset, glyph.data);
+          offset = _wordAlign(offset + glyph.data.lengthInBytes);
+        }
       }
       if (ttf.indexToLocFormat == 0) {
         loca.setUint16(index, offset ~/ 2);
