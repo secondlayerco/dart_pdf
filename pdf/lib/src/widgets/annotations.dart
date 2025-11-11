@@ -103,8 +103,9 @@ class AnnotationUrl extends AnnotationBuilder {
 
   @override
   PdfAnnot build(Context context, PdfRect? box) {
+    print('AnnotationUrl: box before localToGlobal: $box');
     final rect = context.localToGlobal(box!);
-    print('AnnotationUrl: Creating URL link to "$destination" at rect: $rect');
+    print('AnnotationUrl: Creating URL link to "$destination" at rect: $rect (width: ${rect.width}, height: ${rect.height})');
     return PdfAnnot(
       context.page,
       PdfAnnotUrlLink(
