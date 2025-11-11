@@ -92,6 +92,8 @@ class AnnotationLink extends AnnotationBuilder {
       PdfAnnotNamedLink(
         rect: context.localToGlobal(box!),
         dest: destination,
+        // Empty flags set makes the link visible both on screen and when printing
+        flags: {},
       ),
       objser: replaces?.ser,
       objgen: replaces?.gen ?? 0,
@@ -120,14 +122,19 @@ class AnnotationUrl extends AnnotationBuilder {
 
   @override
   PdfAnnot build(Context context, PdfRect? box) {
+    final rect = context.localToGlobal(box!);
+    print(
+        'AnnotationUrl: Creating URL link to "$destination" at rect: $rect with flags: {}');
     return PdfAnnot(
       context.page,
       PdfAnnotUrlLink(
-        rect: context.localToGlobal(box!),
+        rect: rect,
         url: destination,
         date: date,
         author: author,
         subject: subject,
+        // Empty flags set makes the link visible both on screen and when printing
+        flags: {},
       ),
       objser: replaces?.ser,
       objgen: replaces?.gen ?? 0,

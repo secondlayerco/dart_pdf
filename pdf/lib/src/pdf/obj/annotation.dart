@@ -302,7 +302,10 @@ abstract class PdfAnnotBase {
     }
 
     if (flags.isNotEmpty) {
+      print('PdfAnnotBase: Writing flags $flags with value $flagValue to PDF');
       params['/F'] = PdfNum(flagValue);
+    } else {
+      print('PdfAnnotBase: No flags set, skipping /F entry in PDF');
     }
 
     if (date != null) {
