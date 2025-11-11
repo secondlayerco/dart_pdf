@@ -546,7 +546,7 @@ class PdfGraphics {
       return true;
     }());
 
-    _buf.putString('/Span BDC');
+    _buf.putString('/Span BDC ');
     _buf.putString('[');
     font.putText(_buf, s);
     _buf.putString(']TJ ');
@@ -595,7 +595,7 @@ class PdfGraphics {
     PdfNumList([x, y]).output(_page, _buf);
     _buf.putString(' Td ');
 
-    _buf.putString('/Span BDC');
+    _buf.putString('/Span BDC ');
     _buf.putString('[');
     font.putGlyphs(_buf, glyphIndices);
     _buf.putString(']TJ ');
