@@ -3,6 +3,7 @@ import 'dart:math';
 import '../../pdf.dart';
 import '../shaping/shaping.dart';
 
+import 'annotations.dart';
 import 'geometry.dart';
 import 'text.dart';
 import 'text_style.dart';
