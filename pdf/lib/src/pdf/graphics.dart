@@ -44,7 +44,7 @@ enum PdfLineJoin {
   round,
 
   /// The two segments shall be finished with butt caps and the resulting notch beyond the ends of the segments shall be filled with a triangle.
-  bevel
+  bevel,
 }
 
 /// Specify the shape that shall be used at the ends of open sub paths
@@ -57,7 +57,7 @@ enum PdfLineCap {
   round,
 
   /// The stroke shall continue beyond the endpoint of the path for a distance equal to half the line width and shall be squared off.
-  square
+  square,
 }
 
 /// Text rendering mode
@@ -84,19 +84,15 @@ enum PdfTextRenderingMode {
   fillStrokeAndClip,
 
   /// Add text to path for clipping
-  clip
+  clip,
 }
 
 @immutable
 class _PdfGraphicsContext {
-  const _PdfGraphicsContext({
-    required this.ctm,
-  });
+  const _PdfGraphicsContext({required this.ctm});
   final Matrix4 ctm;
 
-  _PdfGraphicsContext copy() => _PdfGraphicsContext(
-        ctm: ctm.clone(),
-      );
+  _PdfGraphicsContext copy() => _PdfGraphicsContext(ctm: ctm.clone());
 }
 
 /// Pdf drawing operations
@@ -554,6 +550,7 @@ class PdfGraphics {
     _buf.putString('[');
     font.putText(_buf, s);
     _buf.putString(']TJ ');
+    _buf.putString('EMC ');
 
     assert(() {
       if (_page.settings.verbose) {
@@ -602,6 +599,7 @@ class PdfGraphics {
     _buf.putString('[');
     font.putGlyphs(_buf, glyphIndices);
     _buf.putString(']TJ ');
+    _buf.putString('EMC ');
 
     _buf.putString('ET ');
 
@@ -1261,8 +1259,10 @@ class _PathBBProxy extends PathProxy {
 
     for (final t in tValues) {
       final mt = 1 - t;
-      _updateMinMax((mt * mt * mt * _pX) + (3 * mt * mt * t * x1) + (3 * mt * t * t * x2) + (t * t * t * x3),
-          (mt * mt * mt * _pY) + (3 * mt * mt * t * y1) + (3 * mt * t * t * y2) + (t * t * t * y3));
+      _updateMinMax(
+        (mt * mt * mt * _pX) + (3 * mt * mt * t * x1) + (3 * mt * t * t * x2) + (t * t * t * x3),
+        (mt * mt * mt * _pY) + (3 * mt * mt * t * y1) + (3 * mt * t * t * y2) + (t * t * t * y3),
+      );
     }
     _updateMinMax(_pX, _pY);
     _updateMinMax(x3, y3);
