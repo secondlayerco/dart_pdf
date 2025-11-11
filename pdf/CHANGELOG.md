@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.13.4-napkin
+
+- Add Annotation support to RichText2
+
 # 1.11.2-napkin
 
 - Handle crashes from PdfColor.fromHex
