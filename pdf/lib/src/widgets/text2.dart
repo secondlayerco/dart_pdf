@@ -3,6 +3,7 @@ import 'dart:math';
 import '../../pdf.dart';
 import '../shaping/shaping.dart';
 
+import 'annotations.dart';
 import 'geometry.dart';
 import 'text.dart';
 import 'text_style.dart';
@@ -54,88 +55,68 @@ class RichText2 extends Widget {
   final List<_RichTextLine> _lines = [];
 
   @override
-  void layout(Context context, BoxConstraints constraints,
-      {bool parentUsesSize = false}) {
-    final children = <TextSpan>[];
-    text.visitChildren((child, style, parentStyle) {
+  void layout(Context context, BoxConstraints constraints, {bool parentUsesSize = false}) {
+    final children = <_TextSpanWithAnnotation>[];
+    text.visitChildren((child, style, annotation) {
       if (child is TextSpan) {
-        children.add(child);
+        children.add(_TextSpanWithAnnotation(child, annotation));
         return true;
       }
       return false;
     }, null, null);
 
-    final constraintWidth = constraints.hasBoundedWidth
-        ? constraints.maxWidth
-        : constraints.constrainWidth();
+    final constraintWidth = constraints.hasBoundedWidth ? constraints.maxWidth : constraints.constrainWidth();
 
     _lines.clear();
 
     var startingPosition = 0.0;
-    for (final textSpan in children) {
+    for (final textSpanWithAnnotation in children) {
+      final textSpan = textSpanWithAnnotation.span;
       final letterSpacing = textSpan.style?.letterSpacing ?? 0.0;
       final lineSpacing = textSpan.style?.lineSpacing ?? 0.0;
       final fontSize = textSpan.style?.fontSize ?? 1.0;
 
-      final spanLines = _layoutText(context, textSpan,
-          startingLocation: startingPosition,
-          maxWidth: constraintWidth,
-          letterSpacing: letterSpacing,
-          fontSize: fontSize);
+      final spanLines =
+          _layoutText(context, textSpan, startingLocation: startingPosition, maxWidth: constraintWidth, letterSpacing: letterSpacing, fontSize: fontSize);
       if (spanLines.linesVisual.isEmpty) continue;
 
       if (_lines.isEmpty) {
-        _lines.addAll(spanLines.linesVisual.map((line) =>
-            _RichTextLine.single(textSpan, line, lineSpacing: lineSpacing)));
+        _lines.addAll(spanLines.linesVisual.map((line) => _RichTextLine.single(textSpanWithAnnotation, line, lineSpacing: lineSpacing)));
       } else {
         if (spanLines.linesVisual.first.isNotEmpty) {
           if (_lines.last.firstOrNull?.shapingOutput.leftToRight ?? true) {
             _lines.last.addLast(_RichTextShapingOutput(
-              textSpan,
+              textSpanWithAnnotation,
               spanLines.linesVisual.first,
             ));
           } else {
             _lines.last.addFirst(_RichTextShapingOutput(
-              textSpan,
+              textSpanWithAnnotation,
               spanLines.linesVisual.first,
             ));
           }
         }
-        _lines.addAll(spanLines.linesVisual.skip(1).map((line) =>
-            _RichTextLine.single(textSpan, line, lineSpacing: lineSpacing)));
+        _lines.addAll(spanLines.linesVisual.skip(1).map((line) => _RichTextLine.single(textSpanWithAnnotation, line, lineSpacing: lineSpacing)));
       }
       startingPosition = spanLines.endingLocation * fontSize;
     }
 
-    box = PdfRect(
-        0.0,
-        0.0,
-        constraints.constrainWidth(_lines.fold(0.0, (a, b) => max(a, b.width))),
-        constraints.constrainHeight(
-            _lines.fold(0.0, (a, b) => a + b.maxHeight + b.lineSpacing)));
+    box = PdfRect(0.0, 0.0, constraints.constrainWidth(_lines.fold(0.0, (a, b) => max(a, b.width))),
+        constraints.constrainHeight(_lines.fold(0.0, (a, b) => a + b.maxHeight + b.lineSpacing)));
   }
 
   LinesShapingOutput _layoutText(Context context, TextSpan textSpan,
-      {required double startingLocation,
-      required double maxWidth,
-      required double letterSpacing,
-      required double fontSize}) {
+      {required double startingLocation, required double maxWidth, required double letterSpacing, required double fontSize}) {
     final primaryFont = textSpan.style!.font!.getFont(context) as PdfTtfFont;
-    final fallbackFonts = textSpan.style!.fontFallback
-        .map((font) => font.getFont(context))
-        .whereType<PdfTtfFont>()
-        .toList();
+    final fallbackFonts = textSpan.style!.fontFallback.map((font) => font.getFont(context)).whereType<PdfTtfFont>().toList();
 
     if (fallbackFonts.length != textSpan.style!.fontFallback.length) {
       print(
           'Some fallback fonts have been removed because they are not TTF: ${textSpan.style!.fontFallback.map((font) => font.getFont(context)).where((font) => font is! PdfTtfFont).map((font) => font.fontName).toList()}');
     }
 
-    return Shaping().shapeLinesWithBreaks(
-        textSpan.text ?? '', primaryFont, fallbackFonts,
-        startingLocation: startingLocation / fontSize,
-        maxWidth: maxWidth / fontSize,
-        letterSpacing: letterSpacing / fontSize);
+    return Shaping().shapeLinesWithBreaks(textSpan.text ?? '', primaryFont, fallbackFonts,
+        startingLocation: startingLocation / fontSize, maxWidth: maxWidth / fontSize, letterSpacing: letterSpacing / fontSize);
   }
 
   @override
@@ -160,24 +141,29 @@ class RichText2 extends Widget {
           currentColor = color;
         }
 
-        final itemMetrics = item.shapingOutput
-                .metrics(letterSpacing: letterSpacing / fontSize) *
-            fontSize;
+        final itemMetrics = item.shapingOutput.metrics(letterSpacing: letterSpacing / fontSize) * fontSize;
 
         final realY = y - itemMetrics.ascent;
+
+        // Paint annotation if present
+        if (item.annotation != null) {
+          print('[pdf] RichText2: Building annotation for text at x=$x, y=$realY');
+          final annotationBox = PdfRect(
+            x,
+            realY - itemMetrics.descent,
+            itemMetrics.advanceWidth,
+            itemMetrics.ascent + itemMetrics.descent,
+          );
+          item.annotation!.build(context, annotationBox);
+        }
+
         for (final shaped in item.shapingOutput.resultsVisual) {
-          final metrics =
-              shaped.metrics(letterSpacing: letterSpacing / fontSize) *
-                  fontSize;
+          final metrics = shaped.metrics(letterSpacing: letterSpacing / fontSize) * fontSize;
           final glyphIndicesLogical = shaped.glyphIndicesLogical;
-          context.canvas.drawGlyphs(
-              shaped.font, fontSize, glyphIndicesLogical, x, realY,
-              charSpace: letterSpacing);
-          _foregroundPaint(context, item.textSpan.style, x, realY, metrics,
-              lineMetrics, letterSpacing);
+          context.canvas.drawGlyphs(shaped.font, fontSize, glyphIndicesLogical, x, realY, charSpace: letterSpacing);
+          _foregroundPaint(context, item.textSpan.style, x, realY, metrics, lineMetrics, letterSpacing);
           x += metrics.advanceWidth;
-          height =
-              max(height, (-itemMetrics.ascent + itemMetrics.descent).abs());
+          height = max(height, (-itemMetrics.ascent + itemMetrics.descent).abs());
         }
       }
       y -= height + line.lineSpacing;
@@ -228,21 +214,22 @@ class RichText2 extends Widget {
 }
 
 class _RichTextShapingOutput {
-  _RichTextShapingOutput(this.textSpan, this.shapingOutput);
+  _RichTextShapingOutput(this.textSpanWithAnnotation, this.shapingOutput);
 
   ShapingOutput shapingOutput;
-  TextSpan textSpan;
+  _TextSpanWithAnnotation textSpanWithAnnotation;
+
+  TextSpan get textSpan => textSpanWithAnnotation.span;
+  AnnotationBuilder? get annotation => textSpanWithAnnotation.annotation;
 
   @override
-  String toString() =>
-      '$_RichTextShapingOutput(${textSpan.text}, $shapingOutput)';
+  String toString() => '$_RichTextShapingOutput(${textSpan.text}, $shapingOutput)';
 }
 
 class _RichTextLine {
   _RichTextLine(this.items, {required this.lineSpacing});
-  _RichTextLine.single(TextSpan textSpan, ShapingOutput shapingOutput,
-      {required this.lineSpacing})
-      : items = [_RichTextShapingOutput(textSpan, shapingOutput)];
+  _RichTextLine.single(_TextSpanWithAnnotation textSpanWithAnnotation, ShapingOutput shapingOutput, {required this.lineSpacing})
+      : items = [_RichTextShapingOutput(textSpanWithAnnotation, shapingOutput)];
 
   List<_RichTextShapingOutput> items;
   double lineSpacing;
@@ -253,12 +240,7 @@ class _RichTextLine {
   void addLast(_RichTextShapingOutput item) => items.add(item);
 
   List<PdfFontMetrics> get allMetrics {
-    return items
-        .map((i) =>
-            i.shapingOutput.metrics(
-                letterSpacing: i.textSpan.style?.letterSpacing ?? 0.0) *
-            (i.textSpan.style?.fontSize ?? 0.0))
-        .toList();
+    return items.map((i) => i.shapingOutput.metrics(letterSpacing: i.textSpan.style?.letterSpacing ?? 0.0) * (i.textSpan.style?.fontSize ?? 0.0)).toList();
   }
 
   double get left => allMetrics.firstOrNull?.left ?? 0.0;
@@ -268,17 +250,24 @@ class _RichTextLine {
       final fontSize = item.textSpan.style?.fontSize ?? 1.0;
       final letterSpacing = item.textSpan.style?.letterSpacing ?? 0.0;
       for (final shaped in item.shapingOutput.resultsVisual) {
-        final metrics =
-            shaped.metrics(letterSpacing: letterSpacing / fontSize) * fontSize;
+        final metrics = shaped.metrics(letterSpacing: letterSpacing / fontSize) * fontSize;
         width += metrics.advanceWidth;
       }
     }
     return width;
   }
 
-  double get maxHeight =>
-      allMetrics.fold(0.0, (a, b) => max(a, b.maxHeight + lineSpacing));
+  double get maxHeight => allMetrics.fold(0.0, (a, b) => max(a, b.maxHeight + lineSpacing));
 
   @override
   String toString() => '$_RichTextLine(${items.join('\n\t')})';
+}
+
+class _TextSpanWithAnnotation {
+  final TextSpan span;
+  final AnnotationBuilder? annotation;
+
+  _TextSpanWithAnnotation(this.span, this.annotation);
+
+  TextStyle? get style => span.style;
 }
