@@ -609,7 +609,7 @@ class BidiSpan {
       var level = levels.first;
 
       // Use min() to handle edge cases where embeddingLevels length differs from text length
-    // (e.g., with combining marks or paragraph separators), preventing RangeError
+      // (e.g., with combining marks or paragraph separators), preventing RangeError
     final endIndex = min(levels.length, paragraphText.length);
       for (var i = 1; i < endIndex; i++) {
         final curLevel = levels[i];

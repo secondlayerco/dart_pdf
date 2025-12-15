@@ -1,5 +1,9 @@
 # Changelog
 
+# 1.13.5-napkin
+
+- Fix rangeerror crash
+
 # 1.13.4-napkin
 
 - Add Annotation support to RichText2
