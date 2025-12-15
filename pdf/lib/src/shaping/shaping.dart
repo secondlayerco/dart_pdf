@@ -1,5 +1,6 @@
 // This class uses Harfbuzz and bidi algorithm to shape text and return glyphs from a given font and text
 
+import 'dart:math' show min;
 import 'package:bidi/bidi.dart' as bidi;
 
 import '../pdf/font/font_metrics.dart';
@@ -564,7 +565,10 @@ class BidiSpan {
     var start = 0;
     var level = levels.first;
 
-    for (var i = 1; i < levels.length; i++) {
+    // Use min() to handle edge cases where embeddingLevels length differs from text length
+    // (e.g., with combining marks or paragraph separators), preventing RangeError
+    final endIndex = min(levels.length, paragraphText.length);
+    for (var i = 1; i < endIndex; i++) {
       final curLevel = levels[i];
       if (level == curLevel) {
         continue;
@@ -576,7 +580,7 @@ class BidiSpan {
     }
 
     paragraphSpans
-        .add(BidiSpan(paragraphText.substring(start, levels.length), level));
+        .add(BidiSpan(paragraphText.substring(start, endIndex), level));
 
     if (leftToRight) {
       spans.addAll(paragraphSpans);
@@ -604,7 +608,10 @@ class BidiSpan {
       var start = 0;
       var level = levels.first;
 
-      for (var i = 1; i < levels.length; i++) {
+      // Use min() to handle edge cases where embeddingLevels length differs from text length
+      // (e.g., with combining marks or paragraph separators), preventing RangeError
+    final endIndex = min(levels.length, paragraphText.length);
+      for (var i = 1; i < endIndex; i++) {
         final curLevel = levels[i];
         if (level == curLevel) {
           continue;
@@ -616,7 +623,7 @@ class BidiSpan {
       }
 
       paragraphSpans
-          .add(BidiSpan(paragraphText.substring(start, levels.length), level));
+          .add(BidiSpan(paragraphText.substring(start, endIndex), level));
 
       if (paragraph.isLeftToRight) {
         spans.addAll(paragraphSpans);
