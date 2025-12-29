@@ -104,8 +104,9 @@ abstract class IcuBinding {
   static String _findFunctionName(DynamicLibrary icu, String name) {
     // Try common ICU versions, including Alpine Linux versions
     const versions = [
-      '76',
+      '78',
       '77',
+      '76',
       '66',
       '74',
       '75',
