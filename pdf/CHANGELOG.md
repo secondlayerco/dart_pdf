@@ -1,5 +1,14 @@
 # Changelog
 
+
+# 1.13.7-napkin
+
+- Add justify alignment support to RichText2
+
+# 1.13.6-napkin
+
+- Add icu version 78 for macOS
+
 # 1.13.5-napkin
 
 - Fix rangeerror crash
