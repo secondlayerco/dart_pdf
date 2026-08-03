@@ -57,11 +57,7 @@ class SvgText extends SvgOperation {
     final x = SvgParser.getNumeric(element, 'x', _brush)?.sizeValue;
     final y = SvgParser.getNumeric(element, 'y', _brush)?.sizeValue;
 
-    final text = element.children
-        .where((node) => node is XmlText || node is XmlCDATA)
-        .map((node) => node.value)
-        .join()
-        .trim();
+    final text = _textContent(element, hasAbsoluteX: x != null);
 
     final pdfFont = painter.getFontCache(
             _brush.fontFamily!, _brush.fontStyle!, _brush.fontWeight!)
@@ -102,8 +98,7 @@ class SvgText extends SvgOperation {
     // Materialized: a lazy map would re-shape every child on each paint/draw pass.
     final tspan = element.children.whereType<XmlElement>().map<SvgText>((e) {
       final child = SvgText.fromXml(e, painter, _brush, childOffset);
-      // Children inherit dominant-baseline, so their y already carries the shift;
-      // re-adding it here would sink each successive run further down the line.
+      // Children inherit dominant-baseline, so their own y already carries the shift.
       childOffset = PdfPoint(child.x! + child.dx, offset.y);
       return child;
     }).toList(growable: false);
@@ -184,8 +179,7 @@ class SvgText extends SvgOperation {
     for (final shapingResult in shapingOutput.resultsVisual) {
       final oblique = _needsFauxOblique(shapingResult.font);
       if (oblique) {
-        // Shearing about the baseline leaves the glyph origin put, so the run
-        // still starts at x and the advance below stays valid.
+        // Sheared about the baseline, so the glyph origin and the advance below hold.
         canvas
           ..saveContext()
           ..setTransform(Matrix4.identity()..setEntry(0, 1, _obliqueShear));
@@ -205,8 +199,7 @@ class SvgText extends SvgOperation {
     }
   }
 
-  /// Most bundled families ship regular and bold only, so an italic run would
-  /// silently render upright; synthesize the slant the way browsers do.
+  /// Bundled families ship regular and bold only, so an italic run would render upright.
   bool _needsFauxOblique(PdfFont font) {
     final style = brush.fontStyle?.trim().toLowerCase();
     if (style != 'italic' && style != 'oblique') {
@@ -220,8 +213,7 @@ class SvgText extends SvgOperation {
     return !subFamily.contains('italic') && !subFamily.contains('oblique');
   }
 
-  // Underline and line-through are geometry, not glyphs; offsets are em fractions
-  // from the alphabetic baseline this text space draws on.
+  // Offsets are em fractions from the alphabetic baseline this text space draws on.
   void _drawTextDecoration(PdfGraphics canvas) {
     final decoration = brush.textDecoration;
     if (decoration == null || metrics.advanceWidth <= 0) {
@@ -244,6 +236,27 @@ class SvgText extends SvgOperation {
 
   // tan(12°), the slant browsers synthesize for a missing italic face.
   static const _obliqueShear = 0.21;
+
+  /// This element's own text, collapsed per `xml:space="default"`. Only a chunk-opening
+  /// element has its edges stripped, so an inline tspan keeps its separating spaces.
+  static String _textContent(XmlElement element, {required bool hasAbsoluteX}) {
+    var text = element.children
+        .where((node) => node is XmlText || node is XmlCDATA)
+        .map((node) => node.value)
+        .join()
+        .replaceAll('\r', '')
+        .replaceAll('\n', '')
+        .replaceAll('\t', ' ')
+        .replaceAll(RegExp(' +'), ' ');
+
+    if (hasAbsoluteX || element.localName == 'text') {
+      text = text.trimLeft();
+      if (element.children.whereType<XmlElement>().isEmpty) {
+        text = text.trimRight();
+      }
+    }
+    return text;
+  }
 
   @override
   void drawShape(PdfGraphics canvas) {

@@ -200,8 +200,6 @@ class SvgBrush {
   final String? fontWeight;
   final SvgTextAnchor? textAnchor;
   final SvgDominantBaseline? dominantBaseline;
-
-  /// `underline`, `line-through`, or both; inherited like the other text properties.
   final String? textDecoration;
   final PdfBlendMode? blendMode;
   final SvgMaskPath? mask;
