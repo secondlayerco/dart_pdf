@@ -99,11 +99,14 @@ class SvgText extends SvgOperation {
 
     var childOffset = PdfPoint(offset.x + metrics.advanceWidth, offset.y);
 
+    // Materialized: a lazy map would re-shape every child on each paint/draw pass.
     final tspan = element.children.whereType<XmlElement>().map<SvgText>((e) {
       final child = SvgText.fromXml(e, painter, _brush, childOffset);
-      childOffset = PdfPoint(child.x! + child.dx, child.y! + baselineOffset);
+      // Children inherit dominant-baseline, so their y already carries the shift;
+      // re-adding it here would sink each successive run further down the line.
+      childOffset = PdfPoint(child.x! + child.dx, offset.y);
       return child;
-    });
+    }).toList(growable: false);
 
     return SvgText(
       offset.x,
@@ -127,7 +130,7 @@ class SvgText extends SvgOperation {
 
   final PdfFontMetrics metrics;
 
-  final Iterable<SvgText> tspan;
+  final List<SvgText> tspan;
 
   final ShapingOutput shapingOutput;
 
@@ -147,6 +150,7 @@ class SvgText extends SvgOperation {
           ..setGraphicState(PdfGraphicState(opacity: brush.fillOpacity));
       }
       _drawFontSpans(canvas);
+      _drawTextDecoration(canvas);
       if (brush.fillOpacity! < 1) {
         canvas.restoreContext();
       }
@@ -178,6 +182,14 @@ class SvgText extends SvgOperation {
     final fontSize = brush.fontSize!.sizeValue;
     var x = 0.0;
     for (final shapingResult in shapingOutput.resultsVisual) {
+      final oblique = _needsFauxOblique(shapingResult.font);
+      if (oblique) {
+        // Shearing about the baseline leaves the glyph origin put, so the run
+        // still starts at x and the advance below stays valid.
+        canvas
+          ..saveContext()
+          ..setTransform(Matrix4.identity()..setEntry(0, 1, _obliqueShear));
+      }
       canvas.drawGlyphs(
           shapingResult.font,
           fontSize,
@@ -185,10 +197,53 @@ class SvgText extends SvgOperation {
           x,
           0,
           mode: mode);
+      if (oblique) {
+        canvas.restoreContext();
+      }
       x += shapingResult.metrics(letterSpacing: 0.0).advanceWidth *
           fontSize;
     }
   }
+
+  /// Most bundled families ship regular and bold only, so an italic run would
+  /// silently render upright; synthesize the slant the way browsers do.
+  bool _needsFauxOblique(PdfFont font) {
+    final style = brush.fontStyle?.trim().toLowerCase();
+    if (style != 'italic' && style != 'oblique') {
+      return false;
+    }
+    if (font is! PdfTtfFont) {
+      return true;
+    }
+    final subFamily =
+        font.font.getNameID(TtfParserName.fontSubfamily)?.toLowerCase() ?? '';
+    return !subFamily.contains('italic') && !subFamily.contains('oblique');
+  }
+
+  // Underline and line-through are geometry, not glyphs; offsets are em fractions
+  // from the alphabetic baseline this text space draws on.
+  void _drawTextDecoration(PdfGraphics canvas) {
+    final decoration = brush.textDecoration;
+    if (decoration == null || metrics.advanceWidth <= 0) {
+      return;
+    }
+    final fontSize = brush.fontSize!.sizeValue;
+    final thickness = max(fontSize / 14, 0.5);
+
+    if (decoration.contains('underline')) {
+      canvas
+        ..drawRect(0, -fontSize * 0.12 - thickness, metrics.advanceWidth, thickness)
+        ..fillPath();
+    }
+    if (decoration.contains('line-through')) {
+      canvas
+        ..drawRect(0, fontSize * 0.26, metrics.advanceWidth, thickness)
+        ..fillPath();
+    }
+  }
+
+  // tan(12°), the slant browsers synthesize for a missing italic face.
+  static const _obliqueShear = 0.21;
 
   @override
   void drawShape(PdfGraphics canvas) {

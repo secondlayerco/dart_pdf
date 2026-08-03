@@ -48,6 +48,7 @@ class SvgBrush {
     required this.fontWeight,
     required this.textAnchor,
     required this.dominantBaseline,
+    required this.textDecoration,
     required this.blendMode,
     this.mask,
   });
@@ -97,6 +98,7 @@ class SvgBrush {
       fontWeight: element.getAttribute('font-weight'),
       textAnchor: _textAnchors[element.getAttribute('text-anchor')],
       dominantBaseline: _dominantBaselines[element.getAttribute('dominant-baseline')],
+      textDecoration: element.getAttribute('text-decoration'),
     ));
 
     final mask = SvgMaskPath.fromXml(element, painter, result);
@@ -127,6 +129,7 @@ class SvgBrush {
     fontStyle: 'normal',
     textAnchor: SvgTextAnchor.start,
     dominantBaseline: SvgDominantBaseline.auto,
+    textDecoration: null,
     mask: null,
   );
 
@@ -197,6 +200,9 @@ class SvgBrush {
   final String? fontWeight;
   final SvgTextAnchor? textAnchor;
   final SvgDominantBaseline? dominantBaseline;
+
+  /// `underline`, `line-through`, or both; inherited like the other text properties.
+  final String? textDecoration;
   final PdfBlendMode? blendMode;
   final SvgMaskPath? mask;
 
@@ -234,6 +240,7 @@ class SvgBrush {
       fontWeight: other.fontWeight ?? fontWeight,
       textAnchor: other.textAnchor ?? textAnchor,
       dominantBaseline: other.dominantBaseline ?? dominantBaseline,
+      textDecoration: other.textDecoration ?? textDecoration,
       strokeLineCap: other.strokeLineCap ?? strokeLineCap,
       strokeLineJoin: other.strokeLineJoin ?? strokeLineJoin,
       strokeMiterLimit: other.strokeMiterLimit ?? strokeMiterLimit,
@@ -260,6 +267,7 @@ class SvgBrush {
     String? fontWeight,
     SvgTextAnchor? textAnchor,
     SvgDominantBaseline? dominantBaseline,
+    String? textDecoration,
     PdfBlendMode? blendMode,
     SvgMaskPath? mask,
   }) {
@@ -282,6 +290,7 @@ class SvgBrush {
       fontWeight: fontWeight ?? this.fontWeight,
       textAnchor: textAnchor ?? this.textAnchor,
       dominantBaseline: dominantBaseline ?? this.dominantBaseline,
+      textDecoration: textDecoration ?? this.textDecoration,
       blendMode: blendMode ?? this.blendMode,
       mask: mask ?? this.mask,
     );
