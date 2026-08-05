@@ -57,11 +57,7 @@ class SvgText extends SvgOperation {
     final x = SvgParser.getNumeric(element, 'x', _brush)?.sizeValue;
     final y = SvgParser.getNumeric(element, 'y', _brush)?.sizeValue;
 
-    final text = element.children
-        .where((node) => node is XmlText || node is XmlCDATA)
-        .map((node) => node.value)
-        .join()
-        .trim();
+    final text = _textContent(element, hasAbsoluteX: x != null);
 
     final pdfFont = painter.getFontCache(
             _brush.fontFamily!, _brush.fontStyle!, _brush.fontWeight!)
@@ -99,11 +95,13 @@ class SvgText extends SvgOperation {
 
     var childOffset = PdfPoint(offset.x + metrics.advanceWidth, offset.y);
 
+    // Materialized: a lazy map would re-shape every child on each paint/draw pass.
     final tspan = element.children.whereType<XmlElement>().map<SvgText>((e) {
       final child = SvgText.fromXml(e, painter, _brush, childOffset);
-      childOffset = PdfPoint(child.x! + child.dx, child.y! + baselineOffset);
+      // Children inherit dominant-baseline, so their own y already carries the shift.
+      childOffset = PdfPoint(child.x! + child.dx, offset.y);
       return child;
-    });
+    }).toList(growable: false);
 
     return SvgText(
       offset.x,
@@ -127,7 +125,7 @@ class SvgText extends SvgOperation {
 
   final PdfFontMetrics metrics;
 
-  final Iterable<SvgText> tspan;
+  final List<SvgText> tspan;
 
   final ShapingOutput shapingOutput;
 
@@ -147,6 +145,7 @@ class SvgText extends SvgOperation {
           ..setGraphicState(PdfGraphicState(opacity: brush.fillOpacity));
       }
       _drawFontSpans(canvas);
+      _drawTextDecoration(canvas);
       if (brush.fillOpacity! < 1) {
         canvas.restoreContext();
       }
@@ -178,6 +177,13 @@ class SvgText extends SvgOperation {
     final fontSize = brush.fontSize!.sizeValue;
     var x = 0.0;
     for (final shapingResult in shapingOutput.resultsVisual) {
+      final oblique = _needsFauxOblique(shapingResult.font);
+      if (oblique) {
+        // Sheared about the baseline, so the glyph origin and the advance below hold.
+        canvas
+          ..saveContext()
+          ..setTransform(Matrix4.identity()..setEntry(0, 1, _obliqueShear));
+      }
       canvas.drawGlyphs(
           shapingResult.font,
           fontSize,
@@ -185,9 +191,71 @@ class SvgText extends SvgOperation {
           x,
           0,
           mode: mode);
+      if (oblique) {
+        canvas.restoreContext();
+      }
       x += shapingResult.metrics(letterSpacing: 0.0).advanceWidth *
           fontSize;
     }
+  }
+
+  /// Bundled families ship regular and bold only, so an italic run would render upright.
+  bool _needsFauxOblique(PdfFont font) {
+    final style = brush.fontStyle?.trim().toLowerCase();
+    if (style != 'italic' && style != 'oblique') {
+      return false;
+    }
+    if (font is! PdfTtfFont) {
+      return true;
+    }
+    final subFamily =
+        font.font.getNameID(TtfParserName.fontSubfamily)?.toLowerCase() ?? '';
+    return !subFamily.contains('italic') && !subFamily.contains('oblique');
+  }
+
+  // Offsets are em fractions from the alphabetic baseline this text space draws on.
+  void _drawTextDecoration(PdfGraphics canvas) {
+    final decoration = brush.textDecoration;
+    if (decoration == null || metrics.advanceWidth <= 0) {
+      return;
+    }
+    final fontSize = brush.fontSize!.sizeValue;
+    final thickness = max(fontSize / 14, 0.5);
+
+    if (decoration.contains('underline')) {
+      canvas
+        ..drawRect(0, -fontSize * 0.12 - thickness, metrics.advanceWidth, thickness)
+        ..fillPath();
+    }
+    if (decoration.contains('line-through')) {
+      canvas
+        ..drawRect(0, fontSize * 0.26, metrics.advanceWidth, thickness)
+        ..fillPath();
+    }
+  }
+
+  // tan(12°), the slant browsers synthesize for a missing italic face.
+  static const _obliqueShear = 0.21;
+
+  /// This element's own text, collapsed per `xml:space="default"`. Only a chunk-opening
+  /// element has its edges stripped, so an inline tspan keeps its separating spaces.
+  static String _textContent(XmlElement element, {required bool hasAbsoluteX}) {
+    var text = element.children
+        .where((node) => node is XmlText || node is XmlCDATA)
+        .map((node) => node.value)
+        .join()
+        .replaceAll('\r', '')
+        .replaceAll('\n', '')
+        .replaceAll('\t', ' ')
+        .replaceAll(RegExp(' +'), ' ');
+
+    if (hasAbsoluteX || element.localName == 'text') {
+      text = text.trimLeft();
+      if (element.children.whereType<XmlElement>().isEmpty) {
+        text = text.trimRight();
+      }
+    }
+    return text;
   }
 
   @override
