@@ -146,6 +146,7 @@ class SvgText extends SvgOperation {
       }
       _drawFontSpans(canvas);
       _drawTextDecoration(canvas);
+      _addLinkAnnotation(canvas);
       if (brush.fillOpacity! < 1) {
         canvas.restoreContext();
       }
@@ -211,6 +212,28 @@ class SvgText extends SvgOperation {
     final subFamily =
         font.font.getNameID(TtfParserName.fontSubfamily)?.toLowerCase() ?? '';
     return !subFamily.contains('italic') && !subFamily.contains('oblique');
+  }
+
+  /// Makes the run clickable. The rect is an annotation on the page, so it takes page coordinates:
+  /// the run box travels through the transform this text space is drawn under.
+  void _addLinkAnnotation(PdfGraphics canvas) {
+    final url = brush.dataHref;
+    final page = painter.page;
+    if (url == null || page == null || metrics.advanceWidth <= 0) {
+      return;
+    }
+    final ctm = canvas.getTransform();
+    final corners = [
+      ctm.transform3(Vector3(0, metrics.descent, 0)),
+      ctm.transform3(Vector3(metrics.advanceWidth, metrics.descent, 0)),
+      ctm.transform3(Vector3(0, metrics.ascent, 0)),
+      ctm.transform3(Vector3(metrics.advanceWidth, metrics.ascent, 0)),
+    ];
+    final left = corners.map((c) => c.x).reduce(min);
+    final right = corners.map((c) => c.x).reduce(max);
+    final bottom = corners.map((c) => c.y).reduce(min);
+    final top = corners.map((c) => c.y).reduce(max);
+    PdfAnnot(page, PdfAnnotUrlLink(rect: PdfRect.fromLTRB(left, bottom, right, top), url: url));
   }
 
   // Offsets are em fractions from the alphabetic baseline this text space draws on.
