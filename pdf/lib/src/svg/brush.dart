@@ -49,6 +49,7 @@ class SvgBrush {
     required this.textAnchor,
     required this.dominantBaseline,
     required this.textDecoration,
+    required this.dataHref,
     required this.blendMode,
     this.mask,
   });
@@ -99,6 +100,7 @@ class SvgBrush {
       textAnchor: _textAnchors[element.getAttribute('text-anchor')],
       dominantBaseline: _dominantBaselines[element.getAttribute('dominant-baseline')],
       textDecoration: element.getAttribute('text-decoration'),
+      dataHref: element.getAttribute('data-href'),
     ));
 
     final mask = SvgMaskPath.fromXml(element, painter, result);
@@ -130,6 +132,7 @@ class SvgBrush {
     textAnchor: SvgTextAnchor.start,
     dominantBaseline: SvgDominantBaseline.auto,
     textDecoration: null,
+    dataHref: null,
     mask: null,
   );
 
@@ -201,6 +204,9 @@ class SvgBrush {
   final SvgTextAnchor? textAnchor;
   final SvgDominantBaseline? dominantBaseline;
   final String? textDecoration;
+
+  /// Link target the run carries; a data attribute so a viewer paints nothing for it.
+  final String? dataHref;
   final PdfBlendMode? blendMode;
   final SvgMaskPath? mask;
 
@@ -239,6 +245,7 @@ class SvgBrush {
       textAnchor: other.textAnchor ?? textAnchor,
       dominantBaseline: other.dominantBaseline ?? dominantBaseline,
       textDecoration: other.textDecoration ?? textDecoration,
+      dataHref: other.dataHref ?? dataHref,
       strokeLineCap: other.strokeLineCap ?? strokeLineCap,
       strokeLineJoin: other.strokeLineJoin ?? strokeLineJoin,
       strokeMiterLimit: other.strokeMiterLimit ?? strokeMiterLimit,
@@ -266,6 +273,7 @@ class SvgBrush {
     SvgTextAnchor? textAnchor,
     SvgDominantBaseline? dominantBaseline,
     String? textDecoration,
+    String? dataHref,
     PdfBlendMode? blendMode,
     SvgMaskPath? mask,
   }) {
@@ -289,6 +297,7 @@ class SvgBrush {
       textAnchor: textAnchor ?? this.textAnchor,
       dominantBaseline: dominantBaseline ?? this.dominantBaseline,
       textDecoration: textDecoration ?? this.textDecoration,
+      dataHref: dataHref ?? this.dataHref,
       blendMode: blendMode ?? this.blendMode,
       mask: mask ?? this.mask,
     );

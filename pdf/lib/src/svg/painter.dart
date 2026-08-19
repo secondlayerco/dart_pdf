@@ -33,6 +33,7 @@ class SvgPainter {
     this.defaultFont,
     this.fallbackFonts, {
     this.customFontLookup,
+    this.page,
   }) : fonts = fonts.map((key, value) => MapEntry(_cleanFontName(key), value));
 
   final SvgParser parser;
@@ -50,6 +51,9 @@ class SvgPainter {
   final List<Font> fallbackFonts;
 
   final SvgCustomFontLookup? customFontLookup;
+
+  /// Page the drawing lands on; link annotations need it, and a painter without one draws links unclickable.
+  final PdfPage? page;
 
   void paint() {
     final brush = parser.colorFilter == null

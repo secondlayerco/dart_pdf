@@ -151,6 +151,7 @@ class SvgImage extends Widget {
       defaultFont,
       fallbackFonts,
       customFontLookup: customFontLookup,
+      page: context.page,
     );
     painter.paint();
     context.canvas.restoreContext();
