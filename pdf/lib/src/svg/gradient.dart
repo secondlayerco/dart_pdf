@@ -88,7 +88,11 @@ abstract class SvgGradient extends SvgColor {
     // past its path a stroke reaches, miters included
     final reach = op.brush.strokeWidth!.sizeValue *
         math.max(1.0, op.brush.strokeMiterLimit!);
-    if (_setOpacityMask(op, canvas, op.boundingBox().inflate(reach))) {
+    // Built by hand: PdfRect.inflate mixes y-up top/bottom into fromLTRB
+    final box = op.boundingBox();
+    final strokeBox = PdfRect(box.x - reach, box.y - reach,
+        box.width + 2 * reach, box.height + 2 * reach);
+    if (_setOpacityMask(op, canvas, strokeBox)) {
       canvas.setStrokePattern(buildGradient(op, canvas, colors));
     }
   }
