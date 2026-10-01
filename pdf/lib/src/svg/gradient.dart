@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+import 'dart:math' as math;
+
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
@@ -69,26 +71,7 @@ abstract class SvgGradient extends SvgColor {
 
     canvas.setFillPattern(buildGradient(op, canvas, colors));
 
-    if (opacityList.any((o) => o < 1)) {
-      final mask = PdfSoftMask(
-        op.painter.document,
-        boundingBox: op.painter.boundingBox,
-      );
-      canvas.setGraphicState(
-        PdfGraphicState(
-          softMask: mask,
-        ),
-      );
-      final maskCanvas = mask.getGraphics()!;
-      maskCanvas.drawBox(op.boundingBox());
-      maskCanvas.setFillPattern(
-        buildGradient(
-          op,
-          maskCanvas,
-          opacityList.map<PdfColor>((o) => PdfColor(o, o, o)).toList(),
-        ),
-      );
-      maskCanvas.fillPath();
+    if (_setOpacityMask(op, canvas, op.boundingBox())) {
       canvas.setFillPattern(buildGradient(op, canvas, colors));
     }
   }
@@ -100,6 +83,42 @@ abstract class SvgGradient extends SvgColor {
     }
 
     canvas.setStrokePattern(buildGradient(op, canvas, colors));
+
+    // Napkin update: stop opacities mask strokes too; the box covers how far
+    // past its path a stroke reaches, miters included
+    final reach = op.brush.strokeWidth!.sizeValue *
+        math.max(1.0, op.brush.strokeMiterLimit!);
+    if (_setOpacityMask(op, canvas, op.boundingBox().inflate(reach))) {
+      canvas.setStrokePattern(buildGradient(op, canvas, colors));
+    }
+  }
+
+  /// Masks [canvas] by the stop opacities over [box]; false when every stop
+  /// is opaque.
+  bool _setOpacityMask(SvgOperation op, PdfGraphics canvas, PdfRect box) {
+    if (!opacityList.any((o) => o < 1)) {
+      return false;
+    }
+    final mask = PdfSoftMask(
+      op.painter.document,
+      boundingBox: op.painter.boundingBox,
+    );
+    canvas.setGraphicState(
+      PdfGraphicState(
+        softMask: mask,
+      ),
+    );
+    final maskCanvas = mask.getGraphics()!;
+    maskCanvas.drawBox(box);
+    maskCanvas.setFillPattern(
+      buildGradient(
+        op,
+        maskCanvas,
+        opacityList.map<PdfColor>((o) => PdfColor(o, o, o)).toList(),
+      ),
+    );
+    maskCanvas.fillPath();
+    return true;
   }
 }
 
