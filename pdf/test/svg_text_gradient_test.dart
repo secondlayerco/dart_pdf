@@ -35,29 +35,15 @@ void main() {
     return latin1.decode(await pdf.save());
   }
 
-  List<String> patternMatrices(String pdf) => [
-        for (final m
-            in RegExp(r'/PatternType 2/Matrix\[([^\]]*)\]').allMatches(pdf))
-          m.group(1)!,
-      ];
-
-  // The rectangles filled in soft mask forms, as x, y, width, height.
-  List<List<double>> maskBoxes(String pdf) => [
-        for (final m in RegExp(
-                r'([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) re\s*/Pattern cs\s*/P\d+ scn\s*f')
-            .allMatches(pdf))
-          [for (var i = 1; i <= 4; i++) double.parse(m.group(i)!)],
-      ];
-
-  const gradient =
+  String gradient([String lastStop = '']) =>
       '<defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0">'
-      '<stop offset="0" stop-color="#ff0000"/><stop offset="1" stop-color="#0000ff" STOP/>'
+      '<stop offset="0" stop-color="#ff0000"/><stop offset="1" stop-color="#0000ff" $lastStop/>'
       '</linearGradient></defs>';
 
   group('SVG text gradients ::', () {
     test('every line of a label takes the gradient where its path sibling does',
         () async {
-      final pdf = await pdfOf('${gradient.replaceFirst('STOP', '')}'
+      final pdf = await pdfOf('${gradient()}'
           '<g transform="translate(20,40)">'
           '<path d="M0 0H200V40H0Z" fill="url(#g)"/>'
           '<text fill="url(#g)" font-size="30">'
@@ -65,7 +51,10 @@ void main() {
           '<tspan x="100" y="130" text-anchor="middle">Second line</tspan>'
           '</text></g>');
 
-      final matrices = patternMatrices(pdf);
+      final matrices = RegExp(r'/PatternType 2/Matrix\[([^\]]*)\]')
+          .allMatches(pdf)
+          .map((m) => m.group(1)!)
+          .toList();
       expect(matrices.length, greaterThanOrEqualTo(3));
       expect(matrices.toSet(), {matrices.first},
           reason: 'the path and both lines share one user space');
@@ -73,13 +62,19 @@ void main() {
 
     test('a translucent stop on text masks over the glyphs, in the text space',
         () async {
-      final pdf = await pdfOf(
-          '${gradient.replaceFirst('STOP', 'stop-opacity="0.25"')}'
+      final pdf = await pdfOf('${gradient('stop-opacity="0.25"')}'
           '<text fill="url(#g)" font-size="30" x="120" y="200">Masked</text>');
 
-      final boxes = maskBoxes(pdf);
-      expect(boxes.length, 1);
-      final box = boxes.single;
+      // The rectangle a soft mask form fills, as x, y, width, height.
+      final masks = RegExp(
+              r'([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+) re\s*/Pattern cs\s*/P\d+ scn\s*f')
+          .allMatches(pdf)
+          .toList();
+      expect(masks.length, 1);
+      final box = masks.single
+          .groups([1, 2, 3, 4])
+          .map((g) => double.parse(g!))
+          .toList();
       expect(box[0], closeTo(120, 5), reason: 'starts where the text starts');
       expect(box[1], inInclusiveRange(200 - 35, 200 - 15),
           reason: 'its top sits above the baseline by the ascent');

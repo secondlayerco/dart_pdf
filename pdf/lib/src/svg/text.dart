@@ -295,11 +295,9 @@ class SvgText extends SvgOperation {
     }
   }
 
-  /// Napkin update: in this element's user space, where gradients are placed,
-  /// joined with the lines of child tspans.
+  /// Napkin update: in this element's y-down user space, child tspans included.
   @override
   PdfRect boundingBox() {
-    // PdfRect edge getters read y-up, so the union keeps to x, y and sizes.
     var minX = x! + metrics.left;
     var minY = y! - metrics.bottom;
     var maxX = x! + metrics.right;
@@ -311,6 +309,6 @@ class SvgText extends SvgOperation {
       maxX = max(maxX, b.x + b.width);
       maxY = max(maxY, b.y + b.height);
     }
-    return PdfRect(minX, minY, maxX - minX, maxY - minY);
+    return PdfRect.fromLTRB(minX, minY, maxX, maxY);
   }
 }
