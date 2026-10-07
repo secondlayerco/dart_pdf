@@ -46,7 +46,7 @@ void main() {
       final pdf = await pdfOf('${gradient()}'
           '<g transform="translate(20,40)">'
           '<path d="M0 0H200V40H0Z" fill="url(#g)"/>'
-          '<text fill="url(#g)" font-size="30">'
+          '<text fill="url(#g)" stroke="url(#g)" stroke-width="1" font-size="30">'
           '<tspan x="100" y="90" text-anchor="middle">Hello world</tspan>'
           '<tspan x="100" y="130" text-anchor="middle">Second line</tspan>'
           '</text></g>');
@@ -55,7 +55,9 @@ void main() {
           .allMatches(pdf)
           .map((m) => m.group(1)!)
           .toList();
-      expect(matrices.length, greaterThanOrEqualTo(3));
+      expect(matrices.length, 5,
+          reason: 'path fill, two line fills and two line strokes; '
+              'the glyph-less text wrapper builds none');
       expect(matrices.toSet(), {matrices.first},
           reason: 'the path and both lines share one user space');
     });

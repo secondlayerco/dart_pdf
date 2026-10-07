@@ -131,8 +131,20 @@ class SvgText extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas) {
-    // Napkin update: paints are set before the glyph space, so a gradient and
-    // its stop-opacity mask land in this element's user space, as on a path
+    // Napkin update: a wrapper around tspans has no glyphs of its own, and its
+    // paints would only build unused patterns and masks
+    if (shapingOutput.resultsVisual.any((r) => r.glyphsLogical.isNotEmpty)) {
+      _paintGlyphs(canvas);
+    }
+
+    for (final span in tspan) {
+      span.paint(canvas);
+    }
+  }
+
+  // Napkin update: paints are set before the glyph space, so a gradient and
+  // its stop-opacity mask land in this element's user space, as on a path
+  void _paintGlyphs(PdfGraphics canvas) {
     if (brush.fill!.isNotEmpty) {
       canvas.saveContext();
       brush.fill!.setFillColor(this, canvas);
@@ -161,10 +173,6 @@ class SvgText extends SvgOperation {
       _setGlyphSpace(canvas);
       _drawFontSpans(canvas, mode: PdfTextRenderingMode.stroke);
       canvas.restoreContext();
-    }
-
-    for (final span in tspan) {
-      span.paint(canvas);
     }
   }
 
