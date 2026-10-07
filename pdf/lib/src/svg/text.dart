@@ -131,28 +131,23 @@ class SvgText extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas) {
-    canvas
-      ..saveContext()
-      ..setTransform(Matrix4.identity()
-        ..scale(1.0, -1.0)
-        ..translate(x, -y!));
-
+    // Napkin update: paints are set before the glyph space, so a gradient and
+    // its stop-opacity mask land in this element's user space, as on a path
     if (brush.fill!.isNotEmpty) {
+      canvas.saveContext();
       brush.fill!.setFillColor(this, canvas);
       if (brush.fillOpacity! < 1) {
-        canvas
-          ..saveContext()
-          ..setGraphicState(PdfGraphicState(opacity: brush.fillOpacity));
+        canvas.setGraphicState(PdfGraphicState(opacity: brush.fillOpacity));
       }
+      _setGlyphSpace(canvas);
       _drawFontSpans(canvas);
       _drawTextDecoration(canvas);
       _addLinkAnnotation(canvas);
-      if (brush.fillOpacity! < 1) {
-        canvas.restoreContext();
-      }
+      canvas.restoreContext();
     }
 
     if (brush.stroke!.isNotEmpty) {
+      canvas.saveContext();
       if (brush.strokeWidth != null) {
         canvas.setLineWidth(brush.strokeWidth!.sizeValue);
       }
@@ -163,14 +158,21 @@ class SvgText extends SvgOperation {
         canvas.setGraphicState(PdfGraphicState(opacity: brush.strokeOpacity));
       }
       brush.stroke!.setStrokeColor(this, canvas);
+      _setGlyphSpace(canvas);
       _drawFontSpans(canvas, mode: PdfTextRenderingMode.stroke);
+      canvas.restoreContext();
     }
-
-    canvas.restoreContext();
 
     for (final span in tspan) {
       span.paint(canvas);
     }
+  }
+
+  /// Glyphs draw y-up from this run's origin.
+  void _setGlyphSpace(PdfGraphics canvas) {
+    canvas.setTransform(Matrix4.identity()
+      ..scale(1.0, -1.0)
+      ..translate(x, -y!));
   }
 
   void _drawFontSpans(PdfGraphics canvas,
@@ -283,11 +285,8 @@ class SvgText extends SvgOperation {
 
   @override
   void drawShape(PdfGraphics canvas) {
-    canvas
-      ..saveContext()
-      ..setTransform(Matrix4.identity()
-        ..scale(1.0, -1.0)
-        ..translate(x, -y!));
+    canvas.saveContext();
+    _setGlyphSpace(canvas);
     _drawFontSpans(canvas, mode: PdfTextRenderingMode.clip);
     canvas.restoreContext();
 
@@ -296,18 +295,22 @@ class SvgText extends SvgOperation {
     }
   }
 
+  /// Napkin update: in this element's user space, where gradients are placed,
+  /// joined with the lines of child tspans.
   @override
   PdfRect boundingBox() {
-    final b = metrics.toPdfRect();
-    var x = b.x, y = b.y, w = b.width, h = b.height;
+    // PdfRect edge getters read y-up, so the union keeps to x, y and sizes.
+    var minX = x! + metrics.left;
+    var minY = y! - metrics.bottom;
+    var maxX = x! + metrics.right;
+    var maxY = y! - metrics.top;
     for (final child in tspan) {
       final b = child.boundingBox();
-      x = min(b.x, x);
-      y = min(b.y, y);
-      w = max(b.width, w);
-      h = max(b.height, w);
+      minX = min(minX, b.x);
+      minY = min(minY, b.y);
+      maxX = max(maxX, b.x + b.width);
+      maxY = max(maxY, b.y + b.height);
     }
-
-    return PdfRect(x, y, w, h);
+    return PdfRect(minX, minY, maxX - minX, maxY - minY);
   }
 }
