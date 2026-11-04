@@ -80,6 +80,25 @@ class PdfPage extends PdfObject<PdfDict> with PdfGraphicStream {
 
   final _contentGraphics = <PdfObject, PdfGraphics>{};
 
+  int? _structParentsKey;
+
+  /// Allocates (or returns the already-allocated) /StructParents key for this
+  /// page. Marked-content sections on the page look up their containing
+  /// structure element via this key in the document's parent tree.
+  ///
+  /// Only valid when the document was constructed with `tagged: true`.
+  int ensureStructParentsKey() {
+    assert(
+      pdfDocument.tagged,
+      'ensureStructParentsKey called on a page whose document is not tagged',
+    );
+    return _structParentsKey ??=
+        pdfDocument.structTreeRoot.allocateStructParentsKey();
+  }
+
+  /// The /StructParents key if one has been allocated, otherwise null.
+  int? get structParentsKey => _structParentsKey;
+
   /// This returns a [PdfGraphics] object, which can then be used to render
   /// on to this page. If a previous [PdfGraphics] object was used, this object
   /// is appended to the page, and will be drawn over the top of any previous
@@ -138,6 +157,15 @@ class PdfPage extends PdfObject<PdfDict> with PdfGraphicStream {
       params['/Contents'] = contentList.values.first;
     } else if (contentList.isNotEmpty) {
       params['/Contents'] = contentList;
+    }
+
+    if (pdfDocument.tagged) {
+      // PDF/UA-1 §7.18.1: pages in a tagged PDF must declare /S as the tab
+      // order so assistive technology follows the structure tree.
+      params['/Tabs'] = const PdfName('/S');
+      if (_structParentsKey != null) {
+        params['/StructParents'] = PdfNum(_structParentsKey!);
+      }
     }
 
     // The /Annots object

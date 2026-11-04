@@ -41,6 +41,7 @@ import 'obj/page.dart';
 import 'obj/page_label.dart';
 import 'obj/page_list.dart';
 import 'obj/signature.dart';
+import 'obj/struct_tree_root.dart';
 
 /// Display hint for the PDF viewer
 enum PdfPageMode {
@@ -76,6 +77,8 @@ class PdfDocument {
     bool verbose = false,
     PdfVersion version = PdfVersion.pdf_1_5,
     this.userDocumentID,
+    this.tagged = false,
+    this.language,
   })  : prev = null,
         _objser = 1 {
     settings = PdfSettings(
@@ -94,6 +97,8 @@ class PdfDocument {
     DeflateCallback? deflate,
     bool compress = true,
     bool verbose = false,
+    this.tagged = false,
+    this.language,
   })  : _objser = prev!.size,
         userDocumentID = null {
     settings = PdfSettings(
@@ -122,6 +127,29 @@ class PdfDocument {
 
   /// This is the Catalog object, which is required by each Pdf Document
   late final PdfCatalog catalog;
+
+  /// When true, the document declares itself as a Tagged PDF. The catalog
+  /// emits /MarkInfo <</Marked true>> and references a /StructTreeRoot, and
+  /// each page emits a /StructParents key. Callers are responsible for
+  /// populating the structure tree via [structTreeRoot] and wrapping page
+  /// content operators in marked-content sections.
+  final bool tagged;
+
+  /// Default document language as a BCP 47 tag (e.g., "en-US"). Required by
+  /// PDF/UA-1 when [tagged] is true. Written to the catalog's /Lang entry.
+  final String? language;
+
+  PdfStructTreeRoot? _structTreeRoot;
+
+  /// Lazily-created structure tree root. Only meaningful when [tagged] is
+  /// true. The first access creates the root; subsequent accesses return the
+  /// same instance.
+  PdfStructTreeRoot get structTreeRoot =>
+      _structTreeRoot ??= PdfStructTreeRoot(this);
+
+  /// True when the structure tree root has been created (and therefore has
+  /// state worth emitting).
+  bool get hasStructTreeRoot => _structTreeRoot != null;
 
   /// PDF generation settings
   late final PdfSettings settings;

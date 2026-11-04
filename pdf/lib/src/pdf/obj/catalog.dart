@@ -16,9 +16,11 @@
 
 import '../document.dart';
 import '../format/array.dart';
+import '../format/bool.dart';
 import '../format/dict.dart';
 import '../format/name.dart';
 import '../format/num.dart';
+import '../format/string.dart';
 import 'annotation.dart';
 import 'metadata.dart';
 import 'names.dart';
@@ -117,6 +119,24 @@ class PdfCatalog extends PdfObject<PdfDict> {
     // the /PageMode setting
     if (pageMode != null) {
       params['/PageMode'] = PdfName(_pdfPageModes[pageMode!.index]);
+    }
+
+    // Tagged-PDF catalog entries (PDF 1.7 §14.7, PDF/UA-1).
+    if (pdfDocument.tagged) {
+      params['/MarkInfo'] = PdfDict.values({
+        '/Marked': const PdfBool(true),
+      });
+      if (pdfDocument.hasStructTreeRoot) {
+        params['/StructTreeRoot'] = pdfDocument.structTreeRoot.ref();
+      }
+      if (pdfDocument.language != null) {
+        params['/Lang'] = PdfString.fromString(pdfDocument.language!);
+      }
+      // PDF/UA-1 §7.1: the document title in the Info dictionary must be
+      // shown in the viewer window chrome. DisplayDocTitle enables that.
+      final viewerPrefs = (params['/ViewerPreferences'] ?? PdfDict()) as PdfDict;
+      viewerPrefs['/DisplayDocTitle'] = const PdfBool(true);
+      params['/ViewerPreferences'] = viewerPrefs;
     }
 
     if (pdfDocument.sign != null) {
