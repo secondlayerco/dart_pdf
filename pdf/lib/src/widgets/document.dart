@@ -38,13 +38,17 @@ class Document {
     String? producer,
     XmlDocument? metadata,
     String? userDocumentID,
+    bool tagged = false,
+    String? language,
   }) : document = PdfDocument(
           pageMode: pageMode,
           deflate: deflate,
           compress: compress,
           verbose: verbose,
           version: version,
-          userDocumentID:userDocumentID,
+          userDocumentID: userDocumentID,
+          tagged: tagged,
+          language: language,
         ) {
     if (title != null ||
         author != null ||
@@ -64,6 +68,21 @@ class Document {
     }
     if (metadata != null) {
       PdfMetadata(document, metadata);
+    } else if (tagged) {
+      // PDF/UA-1 §7.1 requires an XMP packet with pdfuaid:part = 1. Build
+      // one from the Info values the caller supplied so veraPDF / PAC
+      // recognise the document.
+      PdfMetadata(
+        document,
+        PdfMetadata.pdfUa1Xmp(
+          title: title,
+          language: language,
+          producer: producer,
+          author: author,
+          subject: subject,
+          keywords: keywords,
+        ),
+      );
     }
   }
 
@@ -80,11 +99,15 @@ class Document {
     String? subject,
     String? keywords,
     String? producer,
+    bool tagged = false,
+    String? language,
   }) : document = PdfDocument.load(
           parser,
           deflate: deflate,
           compress: compress,
           verbose: verbose,
+          tagged: tagged,
+          language: language,
         ) {
     if (title != null ||
         author != null ||

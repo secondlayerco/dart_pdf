@@ -80,7 +80,12 @@ class Image extends Widget {
     this.width,
     this.height,
     this.dpi,
-  });
+    this.alt,
+    this.decorative = false,
+  }) : assert(
+          !(decorative && alt != null),
+          'Image cannot be decorative and have alt text at the same time',
+        );
 
   final ImageProvider image;
 
@@ -93,6 +98,16 @@ class Image extends Widget {
   final double? height;
 
   final double? dpi;
+
+  /// Alternative text announced by screen readers. When the enclosing
+  /// document is tagged, the image is wrapped in a /Figure structure
+  /// element with this /Alt entry.
+  final String? alt;
+
+  /// When true, the image is treated as decoration and excluded from the
+  /// structure tree (wrapped in /Artifact). When the enclosing document is
+  /// not tagged, this flag has no effect.
+  final bool decorative;
 
   @override
   void layout(Context context, BoxConstraints constraints,
@@ -118,14 +133,48 @@ class Image extends Widget {
     super.paint(context);
 
     final rect = context.localToGlobal(box!);
+    final resolved = image.resolve(context, rect.size, dpi: dpi);
 
-    _paintImage(
-      canvas: context.canvas,
-      image: image.resolve(context, rect.size, dpi: dpi),
-      rect: box!,
-      alignment: alignment,
-      fit: fit,
-    );
+    void drawBody() {
+      _paintImage(
+        canvas: context.canvas,
+        image: resolved,
+        rect: box!,
+        alignment: alignment,
+        fit: fit,
+      );
+    }
+
+    final document = context.document;
+    if (!document.tagged) {
+      drawBody();
+      return;
+    }
+
+    final builder = document.structureBuilder;
+    if (decorative || alt == null) {
+      // Images without alt text default to decorative so the document stays
+      // PDF/UA-conforming. Callers who need a screen-reader-visible image
+      // must supply [alt]. See PDF/UA-1 §7.3.
+      builder.beginArtifact(context.canvas);
+      try {
+        drawBody();
+      } finally {
+        builder.endArtifact(context.canvas);
+      }
+    } else {
+      builder.beginContent(
+        'Figure',
+        page: context.page,
+        canvas: context.canvas,
+        alt: alt,
+      );
+      try {
+        drawBody();
+      } finally {
+        builder.endContent(context.canvas);
+      }
+    }
   }
 }
 
