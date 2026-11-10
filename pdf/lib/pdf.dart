@@ -52,3 +52,4 @@ export 'src/pdf/page_format.dart';
 export 'src/pdf/point.dart';
 export 'src/pdf/raster.dart';
 export 'src/pdf/rect.dart';
+export 'src/pdf/structure_builder.dart';

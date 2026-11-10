@@ -23,6 +23,8 @@ import 'package:vector_math/vector_math_64.dart';
 
 import 'color.dart';
 import 'format/array.dart';
+import 'format/base.dart';
+import 'format/dict.dart';
 import 'format/name.dart';
 import 'format/num.dart';
 import 'format/stream.dart';
@@ -312,6 +314,75 @@ class PdfGraphics {
         _buf.putComment('saveContext()');
       }
       _indent += _indentAmount;
+      return true;
+    }());
+  }
+
+  /// Begin a marked-content section (PDF 1.7 §14.6).
+  ///
+  /// When [mcid] or [properties] is provided, the operator emitted is
+  /// `/<tag> << ... >> BDC` so the section can be referenced from the
+  /// structure tree. Otherwise `/<tag> BMC` is emitted — appropriate for
+  /// artifacts that have no structure reference.
+  ///
+  /// The caller must balance every call with [endMarkedContent].
+  void beginMarkedContent(
+    String tag, {
+    int? mcid,
+    Map<String, PdfDataType>? properties,
+  }) {
+    assert(() {
+      if (_page.pdfDocument.settings.verbose) {
+        _buf.putString(' ' * _indent);
+      }
+      return true;
+    }());
+
+    final hasProps = mcid != null || (properties != null && properties.isNotEmpty);
+    _buf.putString('/$tag ');
+    if (hasProps) {
+      final dict = PdfDict<PdfDataType>();
+      if (mcid != null) {
+        dict['/MCID'] = PdfNum(mcid);
+      }
+      if (properties != null) {
+        properties.forEach((key, value) {
+          dict[key] = value;
+        });
+      }
+      dict.output(_page, _buf);
+      _buf.putString(' BDC ');
+    } else {
+      _buf.putString('BMC ');
+    }
+
+    assert(() {
+      if (_page.pdfDocument.settings.verbose) {
+        _buf.putString(' ' * math.max(0, _commentIndent - _indent - 10));
+        _buf.putComment('beginMarkedContent($tag${mcid != null ? ", mcid: $mcid" : ""})');
+      }
+      _indent += _indentAmount;
+      return true;
+    }());
+  }
+
+  /// End the most-recently begun marked-content section.
+  void endMarkedContent() {
+    assert(() {
+      _indent -= _indentAmount;
+      if (_page.pdfDocument.settings.verbose) {
+        _buf.putString(' ' * _indent);
+      }
+      return true;
+    }());
+
+    _buf.putString('EMC ');
+
+    assert(() {
+      if (_page.pdfDocument.settings.verbose) {
+        _buf.putString(' ' * math.max(0, _commentIndent - 2 - _indent));
+        _buf.putComment('endMarkedContent()');
+      }
       return true;
     }());
   }

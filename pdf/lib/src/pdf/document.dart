@@ -42,6 +42,7 @@ import 'obj/page_label.dart';
 import 'obj/page_list.dart';
 import 'obj/signature.dart';
 import 'obj/struct_tree_root.dart';
+import 'structure_builder.dart';
 
 /// Display hint for the PDF viewer
 enum PdfPageMode {
@@ -151,6 +152,22 @@ class PdfDocument {
   /// state worth emitting).
   bool get hasStructTreeRoot => _structTreeRoot != null;
 
+  PdfStructureBuilder? _structureBuilder;
+
+  /// Stateful builder that widgets use to tag content. Only valid when
+  /// [tagged] is true. Lazily created on first access.
+  PdfStructureBuilder get structureBuilder {
+    assert(
+      tagged,
+      'structureBuilder is only available when PdfDocument(tagged: true)',
+    );
+    return _structureBuilder ??= PdfStructureBuilder(this);
+  }
+
+  /// True when the structure builder has been created (and therefore has
+  /// per-page MCID assignments to flush into the parent tree).
+  bool get hasStructureBuilder => _structureBuilder != null;
+
   /// PDF generation settings
   late final PdfSettings settings;
 
@@ -255,6 +272,13 @@ class PdfDocument {
 
   /// This writes the document to an OutputStream.
   Future<void> _write(PdfStream os) async {
+    // Flush recorded MCID/parent-tree state before objects are prepared,
+    // because finalizeTree() may allocate /StructParents keys on pages and
+    // populate the parent tree object — both of which prepare() reads.
+    if (_structureBuilder != null) {
+      _structureBuilder!.finalizeTree();
+    }
+
     PdfSignature? signature;
 
     final xref = PdfXrefTable(lastObjectId: _objser);
