@@ -504,6 +504,13 @@ class Table extends Widget with SpanningWidget {
       return;
     }
 
+    // When the enclosing document is tagged, open a /TR group around each
+    // row of cells so caller-supplied /TD or /TH structure elements land
+    // under the right row parent, and wrap non-structural draws (row
+    // decorations, table border) in /Artifact so screen readers skip them.
+    final tagged = context.document.tagged;
+    final builder = tagged ? context.document.structureBuilder : null;
+
     final mat = Matrix4.identity();
     mat.translate(box!.x, box!.y);
     context.canvas
@@ -523,13 +530,16 @@ class Table extends Widget with SpanningWidget {
           y = math.min(y, child.box!.y);
           h = math.max(h, child.box!.height);
         }
+        builder?.beginArtifact(context.canvas);
         row.decoration!.paint(
           context,
           PdfRect(0, y, box!.width, h),
           PaintPhase.background,
         );
+        builder?.endArtifact(context.canvas);
       }
 
+      builder?.beginGroup('TR');
       for (final child in row.children) {
         context.canvas
           ..saveContext()
@@ -539,6 +549,8 @@ class Table extends Widget with SpanningWidget {
         child.paint(context);
         context.canvas.restoreContext();
       }
+      builder?.endGroup();
+
       if (index >= _context.lastLine) {
         break;
       }
@@ -557,11 +569,13 @@ class Table extends Widget with SpanningWidget {
           y = math.min(y, child.box!.y);
           h = math.max(h, child.box!.height);
         }
+        builder?.beginArtifact(context.canvas);
         row.decoration!.paint(
           context,
           PdfRect(0, y, box!.width, h),
           PaintPhase.foreground,
         );
+        builder?.endArtifact(context.canvas);
       }
 
       if (index >= _context.lastLine) {
@@ -572,7 +586,9 @@ class Table extends Widget with SpanningWidget {
     context.canvas.restoreContext();
 
     if (border != null) {
+      builder?.beginArtifact(context.canvas);
       border!.paintTable(context, box!, _widths, _heights);
+      builder?.endArtifact(context.canvas);
     }
   }
 
