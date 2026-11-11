@@ -66,6 +66,7 @@ class PdfMetadata extends PdfObject<PdfDictStream> {
     String? keywords,
     DateTime? createDate,
     DateTime? modifyDate,
+    List<String>? extraRdfDescriptions,
   }) {
     final create = (createDate ?? DateTime.now().toUtc()).toUtc();
     final modify = (modifyDate ?? create).toUtc();
@@ -110,6 +111,7 @@ class PdfMetadata extends PdfObject<PdfDictStream> {
     buf.write('<xmp:MetadataDate>${_xmpDate(modify)}</xmp:MetadataDate>');
     buf.write('<pdfuaid:part>1</pdfuaid:part>');
     buf.write('</rdf:Description>');
+    extraRdfDescriptions?.forEach(buf.write);
     buf.write('</rdf:RDF>');
     buf.write('</x:xmpmeta>');
     buf.write('<?xpacket end="w"?>');

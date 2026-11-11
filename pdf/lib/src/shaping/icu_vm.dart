@@ -103,13 +103,16 @@ abstract class IcuBinding {
   // Find the ICU function name based on known versions.
   static String _findFunctionName(DynamicLibrary icu, String name) {
     // Try common ICU versions, including Alpine Linux versions
+    // Listed newest-first so modern macOS / Homebrew installs match quickly;
+    // 66 covers Alpine 3.13.
     const versions = [
+      '80',
+      '79',
       '78',
       '77',
       '76',
-      '66',
-      '74',
       '75',
+      '74',
       '73',
       '72',
       '71',
@@ -117,6 +120,7 @@ abstract class IcuBinding {
       '69',
       '68',
       '67',
+      '66',
     ];
 
     // First try versioned function names
