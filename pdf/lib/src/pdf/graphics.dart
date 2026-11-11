@@ -128,6 +128,20 @@ class PdfGraphics {
   /// Default font if none selected
   PdfFont? get defaultFont => _page.getDefaultFont();
 
+  PdfRect? get surfaceBounds {
+    final page = _page;
+    if (page is PdfPage) {
+      return PdfRect(0, 0, page.pageFormat.width, page.pageFormat.height);
+    }
+    final bounds = page.params['/BBox'];
+    if (bounds is PdfArray<PdfNum> && bounds.values.length == 4) {
+      final values = bounds.values;
+      return PdfRect.fromLTRB(values[0].value.toDouble(), values[1].value.toDouble(),
+          values[2].value.toDouble(), values[3].value.toDouble());
+    }
+    return null;
+  }
+
   bool get altered => _page.altered;
 
   /// Draw a surface on the previously defined shape
@@ -906,6 +920,32 @@ class PdfGraphics {
   /// Get the transformation Matrix
   Matrix4 getTransform() {
     return _context.ctm.clone();
+  }
+
+  // Group content retains surface coordinates so nested masks share its transforms.
+  void drawTransparencyGroup(
+      PdfRect boundingBox, void Function(PdfGraphics canvas) paint) {
+    final transform = getTransform();
+    final inverse = Matrix4.zero();
+    if (inverse.copyInverse(transform) == 0) {
+      return;
+    }
+    final group = PdfGraphicXObject(_page.pdfDocument, '/Form')
+      ..isolatedTransparency = true;
+    group.params['/BBox'] = PdfArray.fromNum([
+      boundingBox.left,
+      boundingBox.bottom,
+      boundingBox.right,
+      boundingBox.top
+    ]);
+    final graphics = PdfGraphics(group, group.buf)..setTransform(transform);
+    paint(graphics);
+    _page.addXObject(group);
+    _page.altered = true;
+    saveContext();
+    setTransform(inverse);
+    _buf.putString('${group.name} Do ');
+    restoreContext();
   }
 
   /// This adds a line segment to the current path

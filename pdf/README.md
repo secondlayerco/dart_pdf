@@ -127,6 +127,7 @@ pdf.addPage(pw.Page(build: (pw.Context context) {
 ```
 
 SVG text supports inherited letter spacing, including length units and the normal reset.
+SVG masks compose with nested masks and gradient transparency through vector groups. Color alpha multiplies fill and stroke opacity; group opacity applies to the composed group.
 
 To load the SVG from a Flutter asset, use `await rootBundle.loadString('assets/file.svg')`
 

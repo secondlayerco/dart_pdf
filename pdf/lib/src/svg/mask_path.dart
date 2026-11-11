@@ -56,7 +56,7 @@ class SvgMaskPath {
   void apply(PdfGraphics canvas) {
     final mask = PdfSoftMask(
       painter.document,
-      boundingBox: painter.boundingBox,
+      boundingBox: painter.localBoundingBox(canvas),
     );
 
     final maskCanvas = mask.getGraphics();

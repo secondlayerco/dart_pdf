@@ -151,8 +151,8 @@ class SvgText extends SvgOperation {
     if (brush.fill!.isNotEmpty) {
       canvas.saveContext();
       brush.fill!.setFillColor(this, canvas);
-      if (brush.fillOpacity! < 1) {
-        canvas.setGraphicState(PdfGraphicState(opacity: brush.fillOpacity));
+      if (brush.effectiveFillOpacity < 1) {
+        canvas.setGraphicState(PdfGraphicState(opacity: brush.effectiveFillOpacity));
       }
       _setGlyphSpace(canvas);
       _drawFontSpans(canvas);
@@ -169,8 +169,8 @@ class SvgText extends SvgOperation {
       if (brush.strokeDashArray != null) {
         canvas.setLineDashPattern(brush.strokeDashArray!);
       }
-      if (brush.strokeOpacity! < 1) {
-        canvas.setGraphicState(PdfGraphicState(opacity: brush.strokeOpacity));
+      if (brush.effectiveStrokeOpacity < 1) {
+        canvas.setGraphicState(PdfGraphicState(opacity: brush.effectiveStrokeOpacity));
       }
       brush.stroke!.setStrokeColor(this, canvas);
       _setGlyphSpace(canvas);

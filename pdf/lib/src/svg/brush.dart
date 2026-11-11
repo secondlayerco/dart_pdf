@@ -195,6 +195,12 @@ class SvgBrush {
   };
 
   final double? opacity;
+
+  double get effectiveFillOpacity => fillOpacity! * (fill?.color?.alpha ?? 1);
+
+  double get effectiveStrokeOpacity =>
+      strokeOpacity! * (stroke?.color?.alpha ?? 1);
+
   final SvgColor? fill;
   final bool? fillEvenOdd;
   final double? fillOpacity;
