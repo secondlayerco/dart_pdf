@@ -52,6 +52,7 @@ class SvgBrush {
     required this.dataHref,
     required this.blendMode,
     this.mask,
+    this.letterSpacing,
   });
 
   factory SvgBrush.fromXml(
@@ -67,7 +68,7 @@ class SvgBrush {
     final strokeLineJoin = element.getAttribute('stroke-linejoin');
     final blendMode = element.getAttribute('mix-blend-mode');
 
-    final result = parent.merge(SvgBrush(
+    var result = parent.merge(SvgBrush(
       opacity: SvgParser.getDouble(element, 'opacity', defaultValue: null),
       blendMode: blendMode == null ? null : _blendModes[blendMode],
       fillOpacity:
@@ -102,6 +103,14 @@ class SvgBrush {
       textDecoration: element.getAttribute('text-decoration'),
       dataHref: element.getAttribute('data-href'),
     ));
+
+    final spacing = element.getAttribute('letter-spacing');
+    if (spacing != null && spacing != 'inherit') {
+      result = result.copyWith(
+          letterSpacing: spacing == 'normal'
+              ? const SvgNumeric.value(0, null)
+              : SvgNumeric(spacing, result));
+    }
 
     final mask = SvgMaskPath.fromXml(element, painter, result);
     if (mask != null) {
@@ -198,6 +207,7 @@ class SvgBrush {
   final PdfLineJoin? strokeLineJoin;
   final double? strokeMiterLimit;
   final SvgNumeric? fontSize;
+  final SvgNumeric? letterSpacing;
   final String? fontFamily;
   final String? fontStyle;
   final String? fontWeight;
@@ -239,6 +249,7 @@ class SvgBrush {
       strokeDashArray: other.strokeDashArray ?? strokeDashArray,
       strokeDashOffset: other.strokeDashOffset ?? strokeDashOffset,
       fontSize: other.fontSize ?? fontSize,
+      letterSpacing: other.letterSpacing ?? letterSpacing,
       fontFamily: other.fontFamily ?? fontFamily,
       fontStyle: other.fontStyle ?? fontStyle,
       fontWeight: other.fontWeight ?? fontWeight,
@@ -267,6 +278,7 @@ class SvgBrush {
     PdfLineJoin? strokeLineJoin,
     double? strokeMiterLimit,
     SvgNumeric? fontSize,
+    SvgNumeric? letterSpacing,
     String? fontFamily,
     String? fontStyle,
     String? fontWeight,
@@ -291,6 +303,7 @@ class SvgBrush {
       strokeLineJoin: strokeLineJoin ?? this.strokeLineJoin,
       strokeMiterLimit: strokeMiterLimit ?? this.strokeMiterLimit,
       fontSize: fontSize ?? this.fontSize,
+      letterSpacing: letterSpacing ?? this.letterSpacing,
       fontFamily: fontFamily ?? this.fontFamily,
       fontStyle: fontStyle ?? this.fontStyle,
       fontWeight: fontWeight ?? this.fontWeight,

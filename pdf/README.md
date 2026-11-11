@@ -126,6 +126,8 @@ pdf.addPage(pw.Page(build: (pw.Context context) {
 })); // Page
 ```
 
+SVG text supports inherited letter spacing, including length units and the normal reset.
+
 To load the SVG from a Flutter asset, use `await rootBundle.loadString('assets/file.svg')`
 
 To use a TrueType font:

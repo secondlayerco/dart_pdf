@@ -66,8 +66,11 @@ class SvgText extends SvgOperation {
     final shapingOutput =
         Shaping().shape(text, pdfFont, painter.fallbackFontsTtf);
 
-    final metrics =
-        shapingOutput.metrics(letterSpacing: 0.0) * _brush.fontSize!.sizeValue;
+    final fontSize = _brush.fontSize!.sizeValue;
+    final letterSpacing = _brush.letterSpacing?.sizeValue ?? 0;
+    final metrics = shapingOutput.metrics(
+            letterSpacing: fontSize == 0 ? 0 : letterSpacing / fontSize) *
+        fontSize;
 
     var baselineOffset = 0.0;
     // Only ideographic is supported
@@ -201,11 +204,16 @@ class SvgText extends SvgOperation {
           shapingResult.glyphIndicesLogical,
           x,
           0,
-          mode: mode);
+          mode: mode,
+          charSpace: brush.letterSpacing?.sizeValue ?? 0);
       if (oblique) {
         canvas.restoreContext();
       }
-      x += shapingResult.metrics(letterSpacing: 0.0).advanceWidth *
+      x += shapingResult
+              .metrics(letterSpacing: fontSize == 0
+                  ? 0
+                  : (brush.letterSpacing?.sizeValue ?? 0) / fontSize)
+              .advanceWidth *
           fontSize;
     }
   }

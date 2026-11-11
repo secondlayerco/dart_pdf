@@ -35,6 +35,7 @@ import 'obj/image.dart';
 import 'obj/page.dart';
 import 'obj/pattern.dart';
 import 'obj/shading.dart';
+import 'obj/ttffont.dart';
 import 'rect.dart';
 
 /// Shape to be used at the corners of paths that are stroked
@@ -672,8 +673,11 @@ class PdfGraphics {
   }) {
     _buf.putString('BT ');
 
+    final tracking = charSpace ?? 0;
+    final clusterSpacing = font is PdfTtfFont && tracking != 0 && size != 0 &&
+        glyphIndices.any((glyph) => (font.font.glyphInfoMap[glyph]?.advanceWidth ?? 0) <= 0);
     setFont(font, size,
-        charSpace: charSpace,
+        charSpace: clusterSpacing ? 0 : charSpace,
         mode: mode,
         rise: rise,
         scale: scale,
@@ -683,7 +687,30 @@ class PdfGraphics {
     _buf.putString(' Td ');
 
     _buf.putString('[');
-    font.putGlyphs(_buf, glyphIndices);
+    if (font is PdfTtfFont && clusterSpacing) {
+      var start = 0;
+      var hasAdvance = false;
+      for (var index = 0; index < glyphIndices.length; index++) {
+        final advance = font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0;
+        if (advance > 0 && index > start) {
+          font.putGlyphs(_buf, glyphIndices.sublist(start, index));
+          if (hasAdvance) {
+            PdfNum(-tracking * 1000 / size).output(_page, _buf);
+          }
+          start = index;
+          hasAdvance = false;
+        }
+        if (advance > 0) {
+          hasAdvance = true;
+        }
+      }
+      font.putGlyphs(_buf, glyphIndices.sublist(start));
+      if (hasAdvance) {
+        PdfNum(-tracking * 1000 / size).output(_page, _buf);
+      }
+    } else {
+      font.putGlyphs(_buf, glyphIndices);
+    }
     _buf.putString(']TJ ');
 
     _buf.putString('ET ');
