@@ -105,7 +105,7 @@ abstract class SvgGradient extends SvgColor {
     }
     final mask = PdfSoftMask(
       op.painter.document,
-      boundingBox: op.painter.boundingBox,
+      boundingBox: op.painter.localBoundingBox(canvas),
     );
     canvas.setGraphicState(
       PdfGraphicState(
@@ -161,7 +161,7 @@ class SvgLinearGradient extends SvgGradient {
           .sizeValue;
       colors.add(color.color);
       stops.add(stop);
-      opacityList.add(opacity);
+      opacityList.add(opacity * (color.color?.alpha ?? 1));
     }
 
     GradientUnits? gradientUnits;
@@ -305,7 +305,7 @@ class SvgRadialGradient extends SvgGradient {
           .sizeValue;
       colors.add(color.color);
       stops.add(stop);
-      opacityList.add(opacity!);
+      opacityList.add(opacity! * (color.color?.alpha ?? 1));
     }
 
     GradientUnits? gradientUnits;

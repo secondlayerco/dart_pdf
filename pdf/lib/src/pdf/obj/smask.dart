@@ -34,8 +34,8 @@ class PdfSoftMask {
     _mask.params['/BBox'] = PdfArray.fromNum([
       boundingBox.x,
       boundingBox.y,
-      boundingBox.width,
-      boundingBox.height,
+      boundingBox.right,
+      boundingBox.top,
     ]);
     if (isolated) {
       _mask.params['/I'] = const PdfBool(true);
