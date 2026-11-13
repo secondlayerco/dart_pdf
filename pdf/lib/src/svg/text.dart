@@ -205,7 +205,8 @@ class SvgText extends SvgOperation {
           x,
           0,
           mode: mode,
-          charSpace: brush.letterSpacing?.sizeValue ?? 0);
+          charSpace: brush.letterSpacing?.sizeValue,
+          leftToRight: shapingResult.leftToRight);
       if (oblique) {
         canvas.restoreContext();
       }

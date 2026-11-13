@@ -684,6 +684,7 @@ class PdfGraphics {
     double? scale,
     PdfTextRenderingMode mode = PdfTextRenderingMode.fill,
     double? rise,
+    bool leftToRight = true,
   }) {
     _buf.putString('BT ');
 
@@ -701,7 +702,20 @@ class PdfGraphics {
     _buf.putString(' Td ');
 
     _buf.putString('[');
-    if (font is PdfTtfFont && clusterSpacing) {
+    if (font is PdfTtfFont && clusterSpacing && !leftToRight) {
+      // Right-to-left runs come in visual order, where a cluster's marks precede its advancing glyph.
+      var start = 0;
+      for (var index = 0; index < glyphIndices.length; index++) {
+        if ((font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0) > 0) {
+          font.putGlyphs(_buf, glyphIndices.sublist(start, index + 1));
+          PdfNum(-tracking * 1000 / size).output(_page, _buf);
+          start = index + 1;
+        }
+      }
+      if (start < glyphIndices.length) {
+        font.putGlyphs(_buf, glyphIndices.sublist(start));
+      }
+    } else if (font is PdfTtfFont && clusterSpacing) {
       var start = 0;
       var hasAdvance = false;
       for (var index = 0; index < glyphIndices.length; index++) {

@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:image/image.dart' as image;
 import 'package:pdf/pdf.dart';
+import 'package:pdf/src/pdf/format/stream.dart';
 import 'package:pdf/widgets.dart' as widgets;
 import 'package:test/test.dart';
 
@@ -96,6 +98,24 @@ void main() {
         }
       });
     }
+
+    test('right-to-left tracking follows each advancing glyph, after the marks that precede it', () async {
+      final document = PdfDocument(compress: false);
+      final font = PdfTtfFont(
+          document, File('open-sans.ttf').readAsBytesSync().buffer.asByteData());
+      final mark = font.font.charToGlyphIndexMap[0x301]!;
+      final base = font.font.charToGlyphIndexMap[0x78]!;
+      PdfPage(document, pageFormat: const PdfPageFormat(200, 100))
+          .getGraphics()
+          .drawGlyphs(font, 30, [mark, base, mark, base], 30, 50,
+              charSpace: 2, leftToRight: false);
+      final content = latin1.decode(await document.save());
+      final cluster = PdfStream();
+      font.putGlyphs(cluster, [mark, base]);
+      final glyphs = latin1.decode(cluster.output());
+      const step = '-66.66667';
+      expect(content, contains('[$glyphs$step$glyphs$step]TJ'));
+    });
 
     for (final fallback in [false, true]) {
       test(

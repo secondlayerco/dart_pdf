@@ -49,6 +49,24 @@ void main() {
       }
     });
 
+    test('a letter-spacing value that is not a length keeps the text, untracked', () {
+      final plain = parseText('abc', '');
+      for (final value in ['initial', 'unset', 'calc(1px + 2px)', '']) {
+        final kept = parseText('abc', 'letter-spacing="$value"');
+        expect(kept.metrics.advanceWidth, plain.metrics.advanceWidth, reason: value);
+      }
+    });
+
+    test('text without letter-spacing sets no character spacing in the PDF', () async {
+      final document = Document(compress: false)
+        ..addPage(Page(
+            pageFormat: const PdfPageFormat(200, 100),
+            build: (_) => SvgImage(
+                svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100"><text x="10" y="50" font-size="20">abc</text></svg>',
+                defaultFont: regular)));
+      expect(latin1.decode(await document.save()), isNot(contains(' Tc')));
+    });
+
     test('fallback font runs retain the measured tracking advance', () {
       final plain = parseText('℠ƀ℠', '');
       final tracked = parseText('℠ƀ℠', 'letter-spacing="2"');

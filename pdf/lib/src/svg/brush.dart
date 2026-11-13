@@ -27,6 +27,9 @@ enum SvgTextAnchor { start, middle, end }
 
 enum SvgDominantBaseline { auto, alphabetic, ideographic, middle, central, mathematical, hanging, textTop, textBottom }
 
+// A length SvgNumeric can read; keywords such as inherit, initial or unset leave the inherited spacing.
+final _lengthPattern = RegExp(r'^[-+]?(\d+\.?\d*|\.\d+)(px|pt|em|cm|mm|in|%)?$');
+
 @immutable
 class SvgBrush {
   const SvgBrush({
@@ -104,12 +107,11 @@ class SvgBrush {
       dataHref: element.getAttribute('data-href'),
     ));
 
-    final spacing = element.getAttribute('letter-spacing');
-    if (spacing != null && spacing != 'inherit') {
-      result = result.copyWith(
-          letterSpacing: spacing == 'normal'
-              ? const SvgNumeric.value(0, null)
-              : SvgNumeric(spacing, result));
+    final spacing = element.getAttribute('letter-spacing')?.trim();
+    if (spacing == 'normal') {
+      result = result.copyWith(letterSpacing: const SvgNumeric.value(0, null));
+    } else if (spacing != null && _lengthPattern.hasMatch(spacing)) {
+      result = result.copyWith(letterSpacing: SvgNumeric(spacing, result));
     }
 
     final mask = SvgMaskPath.fromXml(element, painter, result);

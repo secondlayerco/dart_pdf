@@ -195,7 +195,7 @@ class RichText2 extends Widget {
             _foregroundPaint(context, item.textSpan.style, x, realY, metrics, lineMetrics, letterSpacing);
             x += advanceWithExtra;
           } else {
-            context.canvas.drawGlyphs(shaped.font, fontSize, glyphIndicesLogical, x, realY, charSpace: letterSpacing);
+            context.canvas.drawGlyphs(shaped.font, fontSize, glyphIndicesLogical, x, realY, charSpace: letterSpacing, leftToRight: shaped.leftToRight);
             _foregroundPaint(context, item.textSpan.style, x, realY, metrics, lineMetrics, letterSpacing);
             x += metrics.advanceWidth;
           }
@@ -220,7 +220,7 @@ class RichText2 extends Widget {
     final spaceGlyphIndex = shaped.font.font.charToGlyphIndexMap[32];
     if (spaceGlyphIndex == null || !glyphIndicesLogical.contains(spaceGlyphIndex)) {
       // No space glyphs in this run, draw normally
-      context.canvas.drawGlyphs(shaped.font, fontSize, glyphIndicesLogical, x, y, charSpace: letterSpacing);
+      context.canvas.drawGlyphs(shaped.font, fontSize, glyphIndicesLogical, x, y, charSpace: letterSpacing, leftToRight: shaped.leftToRight);
       final metrics = shaped.metrics(letterSpacing: letterSpacing / fontSize) * fontSize;
       return metrics.advanceWidth;
     }
@@ -236,7 +236,7 @@ class RichText2 extends Widget {
         final segEnd = isSpace ? i + 1 : i;
         if (segEnd > segStart) {
           final segment = glyphIndicesLogical.sublist(segStart, segEnd);
-          context.canvas.drawGlyphs(shaped.font, fontSize, segment, currentX, y, charSpace: letterSpacing);
+          context.canvas.drawGlyphs(shaped.font, fontSize, segment, currentX, y, charSpace: letterSpacing, leftToRight: shaped.leftToRight);
           for (var j = segStart; j < segEnd; j++) {
             final gm = shaped.font.glyphIndexMetricsWithLetterSpacing(GlyphIndex(glyphIndicesLogical[j]), letterSpacing / fontSize);
             currentX += gm.advanceWidth * fontSize;
