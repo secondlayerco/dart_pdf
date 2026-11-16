@@ -35,6 +35,7 @@ import 'obj/image.dart';
 import 'obj/page.dart';
 import 'obj/pattern.dart';
 import 'obj/shading.dart';
+import 'obj/ttffont.dart';
 import 'rect.dart';
 
 /// Shape to be used at the corners of paths that are stroked
@@ -126,6 +127,20 @@ class PdfGraphics {
 
   /// Default font if none selected
   PdfFont? get defaultFont => _page.getDefaultFont();
+
+  PdfRect? get surfaceBounds {
+    final page = _page;
+    if (page is PdfPage) {
+      return PdfRect(0, 0, page.pageFormat.width, page.pageFormat.height);
+    }
+    final bounds = page.params['/BBox'];
+    if (bounds is PdfArray<PdfNum> && bounds.values.length == 4) {
+      final values = bounds.values;
+      return PdfRect.fromLTRB(values[0].value.toDouble(), values[1].value.toDouble(),
+          values[2].value.toDouble(), values[3].value.toDouble());
+    }
+    return null;
+  }
 
   bool get altered => _page.altered;
 
@@ -669,11 +684,15 @@ class PdfGraphics {
     double? scale,
     PdfTextRenderingMode mode = PdfTextRenderingMode.fill,
     double? rise,
+    bool leftToRight = true,
   }) {
     _buf.putString('BT ');
 
+    final tracking = charSpace ?? 0;
+    final clusterSpacing = font is PdfTtfFont && tracking != 0 && size != 0 &&
+        glyphIndices.any((glyph) => (font.font.glyphInfoMap[glyph]?.advanceWidth ?? 0) <= 0);
     setFont(font, size,
-        charSpace: charSpace,
+        charSpace: clusterSpacing ? 0 : charSpace,
         mode: mode,
         rise: rise,
         scale: scale,
@@ -683,7 +702,43 @@ class PdfGraphics {
     _buf.putString(' Td ');
 
     _buf.putString('[');
-    font.putGlyphs(_buf, glyphIndices);
+    if (font is PdfTtfFont && clusterSpacing && !leftToRight) {
+      // Right-to-left runs come in visual order, where a cluster's marks precede its advancing glyph.
+      var start = 0;
+      for (var index = 0; index < glyphIndices.length; index++) {
+        if ((font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0) > 0) {
+          font.putGlyphs(_buf, glyphIndices.sublist(start, index + 1));
+          PdfNum(-tracking * 1000 / size).output(_page, _buf);
+          start = index + 1;
+        }
+      }
+      if (start < glyphIndices.length) {
+        font.putGlyphs(_buf, glyphIndices.sublist(start));
+      }
+    } else if (font is PdfTtfFont && clusterSpacing) {
+      var start = 0;
+      var hasAdvance = false;
+      for (var index = 0; index < glyphIndices.length; index++) {
+        final advance = font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0;
+        if (advance > 0 && index > start) {
+          font.putGlyphs(_buf, glyphIndices.sublist(start, index));
+          if (hasAdvance) {
+            PdfNum(-tracking * 1000 / size).output(_page, _buf);
+          }
+          start = index;
+          hasAdvance = false;
+        }
+        if (advance > 0) {
+          hasAdvance = true;
+        }
+      }
+      font.putGlyphs(_buf, glyphIndices.sublist(start));
+      if (hasAdvance) {
+        PdfNum(-tracking * 1000 / size).output(_page, _buf);
+      }
+    } else {
+      font.putGlyphs(_buf, glyphIndices);
+    }
     _buf.putString(']TJ ');
 
     _buf.putString('ET ');
@@ -879,6 +934,32 @@ class PdfGraphics {
   /// Get the transformation Matrix
   Matrix4 getTransform() {
     return _context.ctm.clone();
+  }
+
+  // Group content retains surface coordinates so nested masks share its transforms.
+  void drawTransparencyGroup(
+      PdfRect boundingBox, void Function(PdfGraphics canvas) paint) {
+    final transform = getTransform();
+    final inverse = Matrix4.zero();
+    if (inverse.copyInverse(transform) == 0) {
+      return;
+    }
+    final group = PdfGraphicXObject(_page.pdfDocument, '/Form')
+      ..isolatedTransparency = true;
+    group.params['/BBox'] = PdfArray.fromNum([
+      boundingBox.left,
+      boundingBox.bottom,
+      boundingBox.right,
+      boundingBox.top
+    ]);
+    final graphics = PdfGraphics(group, group.buf)..setTransform(transform);
+    paint(graphics);
+    _page.addXObject(group);
+    _page.altered = true;
+    saveContext();
+    setTransform(inverse);
+    _buf.putString('${group.name} Do ');
+    restoreContext();
   }
 
   /// This adds a line segment to the current path

@@ -27,6 +27,9 @@ enum SvgTextAnchor { start, middle, end }
 
 enum SvgDominantBaseline { auto, alphabetic, ideographic, middle, central, mathematical, hanging, textTop, textBottom }
 
+// A length SvgNumeric can read; keywords such as inherit, initial or unset leave the inherited spacing.
+final _lengthPattern = RegExp(r'^[-+]?(\d+\.?\d*|\.\d+)(px|pt|em|cm|mm|in|%)?$');
+
 @immutable
 class SvgBrush {
   const SvgBrush({
@@ -52,6 +55,7 @@ class SvgBrush {
     required this.dataHref,
     required this.blendMode,
     this.mask,
+    this.letterSpacing,
   });
 
   factory SvgBrush.fromXml(
@@ -67,7 +71,7 @@ class SvgBrush {
     final strokeLineJoin = element.getAttribute('stroke-linejoin');
     final blendMode = element.getAttribute('mix-blend-mode');
 
-    final result = parent.merge(SvgBrush(
+    var result = parent.merge(SvgBrush(
       opacity: SvgParser.getDouble(element, 'opacity', defaultValue: null),
       blendMode: blendMode == null ? null : _blendModes[blendMode],
       fillOpacity:
@@ -102,6 +106,13 @@ class SvgBrush {
       textDecoration: element.getAttribute('text-decoration'),
       dataHref: element.getAttribute('data-href'),
     ));
+
+    final spacing = element.getAttribute('letter-spacing')?.trim();
+    if (spacing == 'normal') {
+      result = result.copyWith(letterSpacing: const SvgNumeric.value(0, null));
+    } else if (spacing != null && _lengthPattern.hasMatch(spacing)) {
+      result = result.copyWith(letterSpacing: SvgNumeric(spacing, result));
+    }
 
     final mask = SvgMaskPath.fromXml(element, painter, result);
     if (mask != null) {
@@ -186,6 +197,12 @@ class SvgBrush {
   };
 
   final double? opacity;
+
+  double get effectiveFillOpacity => fillOpacity! * (fill?.color?.alpha ?? 1);
+
+  double get effectiveStrokeOpacity =>
+      strokeOpacity! * (stroke?.color?.alpha ?? 1);
+
   final SvgColor? fill;
   final bool? fillEvenOdd;
   final double? fillOpacity;
@@ -198,6 +215,7 @@ class SvgBrush {
   final PdfLineJoin? strokeLineJoin;
   final double? strokeMiterLimit;
   final SvgNumeric? fontSize;
+  final SvgNumeric? letterSpacing;
   final String? fontFamily;
   final String? fontStyle;
   final String? fontWeight;
@@ -239,6 +257,7 @@ class SvgBrush {
       strokeDashArray: other.strokeDashArray ?? strokeDashArray,
       strokeDashOffset: other.strokeDashOffset ?? strokeDashOffset,
       fontSize: other.fontSize ?? fontSize,
+      letterSpacing: other.letterSpacing ?? letterSpacing,
       fontFamily: other.fontFamily ?? fontFamily,
       fontStyle: other.fontStyle ?? fontStyle,
       fontWeight: other.fontWeight ?? fontWeight,
@@ -267,6 +286,7 @@ class SvgBrush {
     PdfLineJoin? strokeLineJoin,
     double? strokeMiterLimit,
     SvgNumeric? fontSize,
+    SvgNumeric? letterSpacing,
     String? fontFamily,
     String? fontStyle,
     String? fontWeight,
@@ -291,6 +311,7 @@ class SvgBrush {
       strokeLineJoin: strokeLineJoin ?? this.strokeLineJoin,
       strokeMiterLimit: strokeMiterLimit ?? this.strokeMiterLimit,
       fontSize: fontSize ?? this.fontSize,
+      letterSpacing: letterSpacing ?? this.letterSpacing,
       fontFamily: fontFamily ?? this.fontFamily,
       fontStyle: fontStyle ?? this.fontStyle,
       fontWeight: fontWeight ?? this.fontWeight,

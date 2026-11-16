@@ -97,10 +97,10 @@ abstract class SvgOperation {
 
   void paint(PdfGraphics canvas) {
     canvas.saveContext();
-    clip.apply(canvas);
     if (transform.isNotEmpty) {
       canvas.setTransform(transform.matrix!);
     }
+    clip.apply(canvas);
     if (brush.opacity! < 1.0 || brush.blendMode != null) {
       canvas.setGraphicState(PdfGraphicState(
         opacity: brush.opacity == 1 ? null : brush.opacity,
@@ -110,7 +110,12 @@ abstract class SvgOperation {
     if (brush.mask != null) {
       brush.mask!.apply(canvas);
     }
-    paintShape(canvas);
+    if (brush.mask != null || brush.opacity! < 1 || brush.blendMode != null) {
+      canvas.drawTransparencyGroup(
+          canvas.surfaceBounds ?? painter.boundingBox, paintShape);
+    } else {
+      paintShape(canvas);
+    }
     canvas.restoreContext();
   }
 

@@ -66,8 +66,11 @@ class SvgText extends SvgOperation {
     final shapingOutput =
         Shaping().shape(text, pdfFont, painter.fallbackFontsTtf);
 
-    final metrics =
-        shapingOutput.metrics(letterSpacing: 0.0) * _brush.fontSize!.sizeValue;
+    final fontSize = _brush.fontSize!.sizeValue;
+    final letterSpacing = _brush.letterSpacing?.sizeValue ?? 0;
+    final metrics = shapingOutput.metrics(
+            letterSpacing: fontSize == 0 ? 0 : letterSpacing / fontSize) *
+        fontSize;
 
     var baselineOffset = 0.0;
     // Only ideographic is supported
@@ -148,8 +151,8 @@ class SvgText extends SvgOperation {
     if (brush.fill!.isNotEmpty) {
       canvas.saveContext();
       brush.fill!.setFillColor(this, canvas);
-      if (brush.fillOpacity! < 1) {
-        canvas.setGraphicState(PdfGraphicState(opacity: brush.fillOpacity));
+      if (brush.effectiveFillOpacity < 1) {
+        canvas.setGraphicState(PdfGraphicState(opacity: brush.effectiveFillOpacity));
       }
       _setGlyphSpace(canvas);
       _drawFontSpans(canvas);
@@ -166,8 +169,8 @@ class SvgText extends SvgOperation {
       if (brush.strokeDashArray != null) {
         canvas.setLineDashPattern(brush.strokeDashArray!);
       }
-      if (brush.strokeOpacity! < 1) {
-        canvas.setGraphicState(PdfGraphicState(opacity: brush.strokeOpacity));
+      if (brush.effectiveStrokeOpacity < 1) {
+        canvas.setGraphicState(PdfGraphicState(opacity: brush.effectiveStrokeOpacity));
       }
       brush.stroke!.setStrokeColor(this, canvas);
       _setGlyphSpace(canvas);
@@ -201,11 +204,17 @@ class SvgText extends SvgOperation {
           shapingResult.glyphIndicesLogical,
           x,
           0,
-          mode: mode);
+          mode: mode,
+          charSpace: brush.letterSpacing?.sizeValue,
+          leftToRight: shapingResult.leftToRight);
       if (oblique) {
         canvas.restoreContext();
       }
-      x += shapingResult.metrics(letterSpacing: 0.0).advanceWidth *
+      x += shapingResult
+              .metrics(letterSpacing: fontSize == 0
+                  ? 0
+                  : (brush.letterSpacing?.sizeValue ?? 0) / fontSize)
+              .advanceWidth *
           fontSize;
     }
   }

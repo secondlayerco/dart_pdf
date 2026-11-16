@@ -168,4 +168,7 @@ class PdfGraphicXObject extends PdfXObject with PdfGraphicStream {
     PdfDocument pdfDocument, [
     String? subtype,
   ]) : super(pdfDocument, subtype);
+
+  @override
+  String get name => '/${super.name}';
 }

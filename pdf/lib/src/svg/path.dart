@@ -204,24 +204,24 @@ class SvgPath extends SvgOperation {
   @override
   void paintShape(PdfGraphics canvas) {
     if (brush.fill!.isNotEmpty) {
+      canvas.saveContext();
       brush.fill!.setFillColor(this, canvas);
-      if (brush.fillOpacity! < 1) {
-        canvas
-          ..saveContext()
-          ..setGraphicState(PdfGraphicState(opacity: brush.fillOpacity));
+      if (brush.effectiveFillOpacity < 1) {
+        canvas.setGraphicState(
+            PdfGraphicState(opacity: brush.effectiveFillOpacity));
       }
       canvas
         ..drawShape(d)
         ..fillPath(evenOdd: brush.fillEvenOdd!);
-      if (brush.fillOpacity! < 1) {
-        canvas.restoreContext();
-      }
+      canvas.restoreContext();
     }
 
     if (brush.stroke!.isNotEmpty) {
+      canvas.saveContext();
       brush.stroke!.setStrokeColor(this, canvas);
-      if (brush.strokeOpacity! < 1) {
-        canvas.setGraphicState(PdfGraphicState(opacity: brush.strokeOpacity));
+      if (brush.effectiveStrokeOpacity < 1) {
+        canvas.setGraphicState(
+            PdfGraphicState(opacity: brush.effectiveStrokeOpacity));
       }
       canvas
         ..drawShape(d)
@@ -232,6 +232,7 @@ class SvgPath extends SvgOperation {
             brush.strokeDashArray!, brush.strokeDashOffset!.toInt())
         ..setLineWidth(brush.strokeWidth!.sizeValue)
         ..strokePath();
+      canvas.restoreContext();
     }
   }
 

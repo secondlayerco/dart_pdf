@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+import 'dart:math' as math;
+
+import 'package:vector_math/vector_math_64.dart';
+
 import '../../pdf.dart';
 import '../widgets/font.dart';
 import '../widgets/svg.dart';
@@ -43,6 +47,25 @@ class SvgPainter {
   final PdfDocument document;
 
   final PdfRect boundingBox;
+
+  PdfRect localBoundingBox(PdfGraphics canvas) {
+    final surfaceBounds = canvas.surfaceBounds ?? boundingBox;
+    final inverse = Matrix4.zero();
+    if (inverse.copyInverse(canvas.getTransform()) == 0) {
+      return PdfRect.zero;
+    }
+    final corners = [
+      Vector3(surfaceBounds.left, surfaceBounds.bottom, 0),
+      Vector3(surfaceBounds.right, surfaceBounds.bottom, 0),
+      Vector3(surfaceBounds.left, surfaceBounds.top, 0),
+      Vector3(surfaceBounds.right, surfaceBounds.top, 0),
+    ].map(inverse.transformed3).toList();
+    final left = corners.map((point) => point.x).reduce(math.min);
+    final bottom = corners.map((point) => point.y).reduce(math.min);
+    final right = corners.map((point) => point.x).reduce(math.max);
+    final top = corners.map((point) => point.y).reduce(math.max);
+    return PdfRect.fromLTRB(left, bottom, right, top);
+  }
 
   final Map<String, List<Font>> fonts;
 
