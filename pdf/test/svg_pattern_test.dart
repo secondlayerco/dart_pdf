@@ -104,7 +104,7 @@ void main() {
       }
 
       expect(RegExp(r'/Pattern cs\s*/P\d+ scn').allMatches(pdf).length, 2);
-      expect('1 0 0 rg'.allMatches(tile).length, 1,
+      expect('1 0 0 rg'.allMatches(pdf).length, 1,
           reason: 'the tile is drawn once, not once per repeat');
     });
 
@@ -123,11 +123,12 @@ void main() {
       expect(numbers(outer, '/Matrix'), [1, 0, 0, -1, 107, 241]);
       expect(numbers(inner, '/Matrix'), [2, 0, 0, 2, 0, 0],
           reason: 'a tile is its own space, so no page flip');
-      final innerName =
-          RegExp(r'/Pattern<</(P\d+)').firstMatch(outer)?.group(1);
+      final cell = pdf.split('endobj').firstWhere(
+          (o) => o.contains('/Subtype/Form') && o.contains('/Pattern<<'));
+      final innerName = RegExp(r'/Pattern<</(P\d+)').firstMatch(cell)?.group(1);
       expect(innerName, isNotNull);
       expect(inner, isNot(contains('/$innerName ')));
-      expect(RegExp('/Pattern cs\\s*/$innerName scn').hasMatch(outer), isTrue);
+      expect(RegExp('/Pattern cs\\s*/$innerName scn').hasMatch(cell), isTrue);
     });
 
     test('opacity and strokes apply to a pattern', () async {
@@ -144,12 +145,12 @@ void main() {
       expect(pdf, contains('/CA 0.5/ca 0.5'));
       expect(pdf, contains('/CA 0.25/ca 0.25'));
 
-      final tiles = tilingPatterns(pdf);
-      expect(tiles.length, 2,
-          reason: 'one translucent tile shared, one opaque');
-      final grouped = tiles.where((t) => t.contains('/XObject<<'));
-      expect(grouped.length, 1,
-          reason: 'a translucent tile blends as one group');
+      expect(tilingPatterns(pdf).length, 1,
+          reason: 'all three shapes are placed alike');
+      final cell =
+          pdf.split('endobj').firstWhere((o) => o.contains('/Subtype/Form'));
+      expect(cell, contains('/I true'),
+          reason: 'a translucent tile blends as one isolated group');
     });
 
     test('tile content keeps its own fonts and images', () async {
@@ -161,10 +162,9 @@ void main() {
           '</defs>'
           '<path d="M0 0H200V100H0Z" fill="url(#p)"/>');
 
-      final tile = tilingPatterns(pdf).single;
-      expect(tile, contains('BT'));
-      expect(tile, contains('/Font<<'));
-      expect(tile, contains('/XObject<<'));
+      final cell = pdf.split('endobj').firstWhere((o) => o.contains('BT'));
+      expect(cell, contains('/Font<<'));
+      expect(cell, contains('/XObject<<'));
       final page =
           pdf.split('endobj').firstWhere((o) => o.contains('/Type/Page/'));
       expect(page, isNot(contains('/Font')));
@@ -217,15 +217,104 @@ void main() {
           reason: 'every path still strokes');
     });
 
+    for (final loop in [
+      (
+        name: 'a group',
+        defs:
+            '${pattern('width="20" height="20"', '<g><rect width="10" height="10" fill="url(#p)"/></g>')}',
+      ),
+      (
+        name: 'a mask',
+        defs: '<mask id="m"><rect width="10" height="10" fill="url(#p)"/></mask>'
+            '${pattern('width="20" height="20"', '<rect width="10" height="10" fill="#ff0000" mask="url(#m)"/>')}',
+      ),
+      (
+        name: 'a group and another pattern',
+        defs: '${pattern('width="20" height="20"', '<g><rect width="10" height="10" fill="url(#q)"/></g>')}'
+            '${pattern('width="20" height="20"', '<g><rect width="10" height="10" fill="url(#p)"/></g>', id: 'q')}',
+      ),
+      (
+        name: 'use of a group',
+        defs: '<g id="g"><rect width="10" height="10" fill="url(#p)"/></g>'
+            '${pattern('width="20" height="20"', '<use href="#g"/>')}',
+      ),
+    ]) {
+      test(
+          'a pattern that reaches itself through ${loop.name} paints an empty cell',
+          () async {
+        final pdf = await pdfOf('<defs>${loop.defs}</defs>'
+            '<path d="M0 0H50V50H0Z" fill="url(#p)" stroke="#ff0000"/>');
+
+        expect(pdf, contains('/Pattern cs'), reason: 'the fill is not dropped');
+        expect('1 0 0 RG'.allMatches(pdf).length, 1);
+        expect(tilingPatterns(pdf), isNotEmpty);
+      });
+    }
+
+    test('lengths a tile cannot resolve leave the shape its other paint',
+        () async {
+      final pdf = await pdfOf('<defs>'
+          '${pattern('width="2em" height="10"', '<rect width="5" height="5"/>', id: 'em')}'
+          '${pattern('width="100%" height="10"', '<rect width="5" height="5"/>', id: 'percent')}'
+          '${pattern('width="10" height="0.001"', '<rect width="5" height="5"/>', id: 'tiny')}'
+          '${pattern('x="1em" width="10" height="10"', '<rect width="5" height="5"/>', id: 'offset')}'
+          '</defs>'
+          '<path d="M0 0H10V10H0Z" fill="url(#em)" stroke="#ff0000"/>'
+          '<path d="M20 0H30V10H20Z" fill="url(#percent)" stroke="#ff0000"/>'
+          '<path d="M40 0H50V10H40Z" fill="url(#tiny)" stroke="#ff0000"/>'
+          '<path d="M60 0H70V10H60Z" fill="url(#offset)" stroke="#ff0000"/>');
+
+      expect(pdf, isNot(contains('/PatternType')));
+      expect('1 0 0 RG'.allMatches(pdf).length, 4,
+          reason: 'every path still strokes');
+    });
+
+    test('a degenerate transform never emits a singular pattern matrix',
+        () async {
+      final pdf = await pdfOf('<defs>'
+          '${pattern('width="20" height="20"', '<rect width="10" height="20" fill="#ff0000"/>')}'
+          '</defs>'
+          '<path d="M0 0H50V50H0Z" fill="url(#p)" transform="scale(0)"/>'
+          '<path d="M0 0H50V50H0Z" fill="url(#p)" transform="scale(1 0)"/>'
+          '<path d="M0 0H50V50H0Z" fill="url(#p)" stroke="url(#p)" stroke-width="4"/>');
+
+      final tiles = tilingPatterns(pdf);
+      expect(tiles, isNotEmpty);
+      for (final tile in tiles) {
+        final m = numbers(tile, '/Matrix');
+        expect((m[0] * m[3] - m[1] * m[2]).abs(), greaterThan(1e-9));
+      }
+      expect('/Pattern cs'.allMatches(pdf).length, 1,
+          reason:
+              'shapes under a transform that is not invertible draw nothing');
+      expect('/Pattern CS'.allMatches(pdf).length, 1);
+    });
+
+    test('shapes at different places share one tile drawing', () async {
+      final bars = [
+        for (var i = 0; i < 300; i++)
+          '<g transform="translate($i 0)"><path d="M0 0H2V30H0Z" fill="url(#p)"/></g>'
+      ].join();
+      final pdf = await pdfOf('<defs>'
+          '${pattern('width="20" height="20"', '<rect width="10" height="20" fill="#12ab34"/><path d="M0 0L9 9" stroke="#12ab34"/>')}'
+          '</defs>$bars');
+
+      expect(tilingPatterns(pdf).length, 300);
+      expect('0.07059 0.67059 0.20392 rg'.allMatches(pdf).length, 1,
+          reason: 'the tile content is written once, not once per placement');
+      expect(pdf.length, lessThan(300 * 400));
+    });
+
     test('a pattern that paints itself ends with an empty tile', () async {
       final pdf = await pdfOf('<defs>'
           '${pattern('width="10" height="10"', '<rect width="5" height="5" fill="url(#p)"/><rect width="5" height="5" stroke="#ff0000"/>')}'
           '</defs>'
           '<path d="M0 0H10V10H0Z" fill="url(#p)"/>');
 
-      final tile = tilingPatterns(pdf).single;
-      expect('1 0 0 RG'.allMatches(tile).length, 1);
-      expect(tile, isNot(contains('/Pattern cs')));
+      final cell =
+          pdf.split('endobj').firstWhere((o) => o.contains('1 0 0 RG'));
+      expect(cell, contains('/Subtype/Form'));
+      expect(cell, isNot(contains('/Pattern cs')));
     });
   });
 }

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
+import '../pdf/format/array.dart';
+import '../pdf/obj/graphic_stream.dart';
 import 'brush.dart';
 import 'color.dart';
 import 'operation.dart';
@@ -37,6 +40,27 @@ class SvgPattern extends SvgColor {
     this.children,
   );
 
+  // Smaller cells would repeat millions of times
+  static const _minimumSize = 0.1;
+
+  /// A length in user units, or null when it needs a context a pattern lacks
+  static double? _length(XmlElement element, String name, [double? fallback]) {
+    final attribute = element.getAttribute(name);
+    if (attribute == null) {
+      return fallback;
+    }
+
+    try {
+      final length = SvgNumeric(attribute, null);
+      if (length.unit == SvgUnit.em || length.unit == SvgUnit.percent) {
+        return null;
+      }
+      return length.sizeValue;
+    } on StateError {
+      return null;
+    }
+  }
+
   /// The pattern, or [SvgColor.unknown] when it cannot be drawn
   static SvgColor fromXml(XmlElement element, SvgPainter painter) {
     final id = element.getAttribute('id');
@@ -52,14 +76,18 @@ class SvgPattern extends SvgColor {
       return SvgColor.unknown;
     }
 
-    final width = SvgParser.getNumeric(element, 'width', null)?.sizeValue;
-    final height = SvgParser.getNumeric(element, 'height', null)?.sizeValue;
+    final x = _length(element, 'x', 0);
+    final y = _length(element, 'y', 0);
+    final width = _length(element, 'width');
+    final height = _length(element, 'height');
     final transform =
         SvgTransform.fromString(element.getAttribute('patternTransform'));
-    if (width == null ||
+    if (x == null ||
+        y == null ||
+        width == null ||
         height == null ||
-        width <= 0 ||
-        height <= 0 ||
+        width < _minimumSize ||
+        height < _minimumSize ||
         (transform.isNotEmpty && transform.matrix!.determinant() == 0)) {
       return SvgColor.unknown;
     }
@@ -79,8 +107,8 @@ class SvgPattern extends SvgColor {
 
       final result = SvgPattern._(
         painter,
-        SvgParser.getNumeric(element, 'x', null, defaultValue: 0)!.sizeValue,
-        SvgParser.getNumeric(element, 'y', null, defaultValue: 0)!.sizeValue,
+        x,
+        y,
         width,
         height,
         transform,
@@ -117,13 +145,44 @@ class SvgPattern extends SvgColor {
   /// Tiles already built, by the matrix that places them
   final _tiles = <String, PdfTilingPattern>{};
 
+  PdfGraphicXObject? _content;
+
+  PdfTilingPattern? _empty;
+
+  bool _painting = false;
+
   @override
   bool get isEmpty => false;
 
   @override
   SvgColor merge(SvgColor other) => other.isEmpty ? this : other;
 
-  PdfTilingPattern _build(PdfGraphics canvas, {required bool translucent}) {
+  /// The cell drawing, written once for every tile that repeats it
+  PdfGraphicXObject _paintContent() {
+    // Isolated, so a viewer applying an opacity per object blends the cell as one
+    final content = PdfGraphicXObject(painter.document, '/Form')
+      ..isolatedTransparency = true;
+    content.params['/BBox'] = PdfArray.fromNum([0, 0, width, height]);
+    final tile = PdfGraphics(content, content.buf);
+    _painting = true;
+    try {
+      for (final child in children) {
+        child.paint(tile);
+      }
+    } finally {
+      _painting = false;
+    }
+    return content;
+  }
+
+  /// A tile that paints nothing, for a cell that reaches itself or has no area
+  PdfTilingPattern _emptyTile() => _empty ??= PdfTilingPattern(
+        painter.document,
+        boundingBox: PdfRect(0, 0, width, height),
+        matrix: Matrix4.identity(),
+      );
+
+  PdfTilingPattern _build(PdfGraphics canvas) {
     // The tracked transform is from the stream's default space, where a pattern matrix lands
     final matrix = canvas.getTransform();
     if (transform.isNotEmpty) {
@@ -131,50 +190,34 @@ class SvgPattern extends SvgColor {
     }
     matrix.translate(x, y);
 
+    if (_painting || matrix.determinant() == 0) {
+      return _emptyTile();
+    }
+
     final s = matrix.storage;
-    final key = '${painter.patternDepth} $translucent ${s[0]} ${s[1]} ${s[4]} '
-        '${s[5]} ${s[12]} ${s[13]}';
+    final key = '${s[0]} ${s[1]} ${s[4]} ${s[5]} ${s[12]} ${s[13]}';
     final cached = _tiles[key];
     if (cached != null) {
       return cached;
     }
 
-    final cell = PdfRect(0, 0, width, height);
-    final pattern = PdfTilingPattern(
+    final content = _content ??= _paintContent();
+    return _tiles[key] = PdfTilingPattern(
       painter.document,
-      boundingBox: cell,
+      boundingBox: PdfRect(0, 0, width, height),
       matrix: matrix,
+      content: content,
     );
-    void paintChildren(PdfGraphics tile) {
-      for (final child in children) {
-        child.paint(tile);
-      }
-    }
-
-    painter.patternDepth++;
-    try {
-      if (translucent) {
-        // Some viewers apply the opacity to each object of the tile, not to the tile
-        pattern.getGraphics().drawTransparencyGroup(cell, paintChildren);
-      } else {
-        paintChildren(pattern.getGraphics());
-      }
-    } finally {
-      painter.patternDepth--;
-    }
-    return _tiles[key] = pattern;
   }
 
   @override
   void setFillColor(SvgOperation op, PdfGraphics canvas) {
-    canvas.setFillPattern(
-        _build(canvas, translucent: op.brush.effectiveFillOpacity < 1));
+    canvas.setFillPattern(_build(canvas));
   }
 
   @override
   void setStrokeColor(SvgOperation op, PdfGraphics canvas) {
-    canvas.setStrokePattern(
-        _build(canvas, translucent: op.brush.effectiveStrokeOpacity < 1));
+    canvas.setStrokePattern(_build(canvas));
   }
 
   @override

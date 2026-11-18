@@ -79,12 +79,14 @@ class PdfShadingPattern extends PdfPattern {
 }
 
 /// Colored tiling pattern (PatternType 1, PaintType 1, TilingType 1) whose
-/// cell is a content stream with its own resources
+/// cell is a content stream with its own resources, or the shared [content]
+/// form when several patterns repeat the same drawing under other matrices
 class PdfTilingPattern extends PdfPattern with PdfGraphicStream {
   PdfTilingPattern(
     PdfDocument pdfDocument, {
     required PdfRect boundingBox,
     required Matrix4 matrix,
+    PdfGraphicXObject? content,
   })  : xStep = boundingBox.width,
         yStep = boundingBox.height,
         super(pdfDocument, 1, matrix) {
@@ -95,6 +97,10 @@ class PdfTilingPattern extends PdfPattern with PdfGraphicStream {
       boundingBox.top,
     ]);
     _graphics = PdfGraphics(this, buf);
+    if (content != null) {
+      addXObject(content);
+      buf.putString('${content.name} Do ');
+    }
   }
 
   /// Horizontal spacing between pattern cells, in pattern space

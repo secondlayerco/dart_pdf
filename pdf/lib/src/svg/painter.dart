@@ -86,9 +86,6 @@ class SvgPainter {
   /// Patterns whose tile is being parsed, to stop a pattern that fills itself
   final patternsInProgress = <XmlElement>{};
 
-  /// How many pattern tiles are being painted into one another
-  int patternDepth = 0;
-
   SvgBrush get defaultBrush => parser.colorFilter == null
       ? SvgBrush.defaultContext
       : SvgBrush.defaultContext
