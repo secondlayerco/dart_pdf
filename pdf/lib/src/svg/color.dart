@@ -20,6 +20,7 @@ import 'gradient.dart';
 import 'operation.dart';
 import 'painter.dart';
 import 'parser.dart';
+import 'pattern.dart';
 
 class SvgColor {
   const SvgColor({
@@ -102,6 +103,9 @@ class SvgColor {
       }
       if (gradient.name.local == 'radialGradient') {
         return SvgRadialGradient.fromXml(gradient, painter);
+      }
+      if (gradient.name.local == 'pattern') {
+        return SvgPattern.fromXml(gradient, painter);
       }
       return SvgColor.unknown;
     }

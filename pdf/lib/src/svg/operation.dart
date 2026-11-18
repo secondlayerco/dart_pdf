@@ -96,6 +96,10 @@ abstract class SvgOperation {
   final SvgPainter painter;
 
   void paint(PdfGraphics canvas) {
+    // Nothing can be seen through a transform that is not invertible
+    if (transform.isNotEmpty && transform.matrix!.determinant() == 0) {
+      return;
+    }
     canvas.saveContext();
     if (transform.isNotEmpty) {
       canvas.setTransform(transform.matrix!);

@@ -17,6 +17,7 @@
 import 'dart:math' as math;
 
 import 'package:vector_math/vector_math_64.dart';
+import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
 import '../widgets/font.dart';
@@ -26,6 +27,7 @@ import 'brush.dart';
 import 'color.dart';
 import 'group.dart';
 import 'parser.dart';
+import 'pattern.dart';
 
 class SvgPainter {
   SvgPainter(
@@ -78,13 +80,19 @@ class SvgPainter {
   /// Page the drawing lands on; link annotations need it, and a painter without one draws links unclickable.
   final PdfPage? page;
 
-  void paint() {
-    final brush = parser.colorFilter == null
-        ? SvgBrush.defaultContext
-        : SvgBrush.defaultContext
-            .copyWith(fill: SvgColor(color: parser.colorFilter));
+  /// Patterns parsed so far, by id
+  final patterns = <String, SvgPattern>{};
 
-    SvgGroup.fromXml(parser.root, this, brush).paint(_canvas!);
+  /// Patterns whose tile is being parsed, to stop a pattern that fills itself
+  final patternsInProgress = <XmlElement>{};
+
+  SvgBrush get defaultBrush => parser.colorFilter == null
+      ? SvgBrush.defaultContext
+      : SvgBrush.defaultContext
+          .copyWith(fill: SvgColor(color: parser.colorFilter));
+
+  void paint() {
+    SvgGroup.fromXml(parser.root, this, defaultBrush).paint(_canvas!);
   }
 
   final _fontCache = <String, PdfFont>{};

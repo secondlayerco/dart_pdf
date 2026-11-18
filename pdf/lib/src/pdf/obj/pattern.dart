@@ -19,8 +19,13 @@ import 'package:vector_math/vector_math_64.dart';
 import '../document.dart';
 import '../format/array.dart';
 import '../format/dict.dart';
+import '../format/dict_stream.dart';
 import '../format/num.dart';
+import '../format/stream.dart';
 import '../graphic_state.dart';
+import '../graphics.dart';
+import '../rect.dart';
+import 'graphic_stream.dart';
 import 'object.dart';
 import 'shading.dart';
 
@@ -70,5 +75,69 @@ class PdfShadingPattern extends PdfPattern {
     if (graphicState != null) {
       params['/ExtGState'] = graphicState!.output();
     }
+  }
+}
+
+/// Colored tiling pattern (PatternType 1, PaintType 1, TilingType 1) whose
+/// cell is a content stream with its own resources, or the shared [content]
+/// form when several patterns repeat the same drawing under other matrices
+class PdfTilingPattern extends PdfPattern with PdfGraphicStream {
+  PdfTilingPattern(
+    PdfDocument pdfDocument, {
+    required PdfRect boundingBox,
+    required Matrix4 matrix,
+    PdfGraphicXObject? content,
+  })  : xStep = boundingBox.width,
+        yStep = boundingBox.height,
+        super(pdfDocument, 1, matrix) {
+    params['/BBox'] = PdfArray.fromNum([
+      boundingBox.x,
+      boundingBox.y,
+      boundingBox.right,
+      boundingBox.top,
+    ]);
+    _graphics = PdfGraphics(this, buf);
+    if (content != null) {
+      addXObject(content);
+      buf.putString('${content.name} Do ');
+    }
+  }
+
+  /// Horizontal spacing between pattern cells, in pattern space
+  final double xStep;
+
+  /// Vertical spacing between pattern cells, in pattern space
+  final double yStep;
+
+  /// This holds the cell's content.
+  final PdfStream buf = PdfStream();
+
+  late final PdfGraphics _graphics;
+
+  /// Canvas drawing the cell, in pattern space
+  PdfGraphics getGraphics() => _graphics;
+
+  @override
+  void prepare() {
+    super.prepare();
+
+    params['/PaintType'] = const PdfNum(1);
+    params['/TilingType'] = const PdfNum(1);
+    params['/XStep'] = PdfNum(xStep);
+    params['/YStep'] = PdfNum(yStep);
+    // A pattern dictionary has no transparency group entry
+    params.values.remove('/Group');
+    if (!params.containsKey('/Resources')) {
+      params['/Resources'] = PdfDict();
+    }
+  }
+
+  @override
+  void writeContent(PdfStream s) {
+    PdfDictStream(
+      values: params.values,
+      data: buf.output(),
+    ).output(this, s, settings.verbose ? 0 : null);
+    s.putByte(0x0a);
   }
 }
