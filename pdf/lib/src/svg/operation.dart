@@ -104,23 +104,32 @@ abstract class SvgOperation {
     if (transform.isNotEmpty) {
       canvas.setTransform(transform.matrix!);
     }
-    clip.apply(canvas);
-    if (brush.opacity! < 1.0 || brush.blendMode != null) {
-      canvas.setGraphicState(PdfGraphicState(
-        opacity: brush.opacity == 1 ? null : brush.opacity,
-        blendMode: brush.blendMode,
-      ));
+    final linkClip = clip.apply(canvas);
+    if (linkClip != null) {
+      painter.linkClips.add(linkClip);
     }
-    if (brush.mask != null) {
-      brush.mask!.apply(canvas);
+    try {
+      if (brush.opacity! < 1.0 || brush.blendMode != null) {
+        canvas.setGraphicState(PdfGraphicState(
+          opacity: brush.opacity == 1 ? null : brush.opacity,
+          blendMode: brush.blendMode,
+        ));
+      }
+      if (brush.mask != null) {
+        brush.mask!.apply(canvas);
+      }
+      if (brush.mask != null || brush.opacity! < 1 || brush.blendMode != null) {
+        canvas.drawTransparencyGroup(
+            canvas.surfaceBounds ?? painter.boundingBox, paintShape);
+      } else {
+        paintShape(canvas);
+      }
+    } finally {
+      if (linkClip != null) {
+        painter.linkClips.removeLast();
+      }
+      canvas.restoreContext();
     }
-    if (brush.mask != null || brush.opacity! < 1 || brush.blendMode != null) {
-      canvas.drawTransparencyGroup(
-          canvas.surfaceBounds ?? painter.boundingBox, paintShape);
-    } else {
-      paintShape(canvas);
-    }
-    canvas.restoreContext();
   }
 
   @protected

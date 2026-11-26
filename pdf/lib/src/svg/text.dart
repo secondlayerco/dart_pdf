@@ -24,6 +24,7 @@ import '../pdf/format/string.dart';
 import '../shaping/shaping.dart';
 import 'brush.dart';
 import 'clip_path.dart';
+import 'link_region.dart';
 import 'operation.dart';
 import 'painter.dart';
 import 'parser.dart';
@@ -250,18 +251,8 @@ class SvgText extends SvgOperation {
     if (url == null || page == null || metrics.advanceWidth <= 0) {
       return;
     }
-    final ctm = canvas.getTransform();
-    final corners = [
-      ctm.transform3(Vector3(0, metrics.descent, 0)),
-      ctm.transform3(Vector3(metrics.advanceWidth, metrics.descent, 0)),
-      ctm.transform3(Vector3(0, metrics.ascent, 0)),
-      ctm.transform3(Vector3(metrics.advanceWidth, metrics.ascent, 0)),
-    ];
-    final left = corners.map((c) => c.x).reduce(min);
-    final right = corners.map((c) => c.x).reduce(max);
-    final bottom = corners.map((c) => c.y).reduce(min);
-    final top = corners.map((c) => c.y).reduce(max);
-    PdfAnnot(page, PdfAnnotUrlLink(rect: PdfRect.fromLTRB(left, bottom, right, top), url: url));
+    addSvgTextLink(page, url, canvas.getTransform(), metrics.advanceWidth,
+        metrics.descent, metrics.ascent, painter.linkClips);
   }
 
   // Offsets are em fractions from the alphabetic baseline this text space draws on.
