@@ -26,6 +26,19 @@ class HarfbuzzPointer<T extends ffi.NativeType> {
   HarfbuzzPointer(this._pointer);
 }
 
+class HarfbuzzText {
+  HarfbuzzText(List<int> codepoints)
+      : length = codepoints.length,
+        _pointer = malloc<ffi.Uint32>(codepoints.length) {
+    _pointer.asTypedList(length).setAll(0, codepoints);
+  }
+
+  final int length;
+  final ffi.Pointer<ffi.Uint32> _pointer;
+
+  void release() => malloc.free(_pointer);
+}
+
 class HarfbuzzBinding {
   final ffi.Pointer<T> Function<T extends ffi.NativeType>(String symbolName)
       _lookup;
@@ -168,8 +181,9 @@ class HarfbuzzBinding {
   void bufferDestroy(HarfbuzzBuffer buffer) =>
       _bufferDestroyFunction(buffer._pointer);
 
-  void bufferAddString(HarfbuzzBuffer buffer, String str) =>
-      _bufferAddStrFunction(buffer._pointer, str.toNativeUtf8(), -1, 0, -1);
+  void bufferAddText(
+          HarfbuzzBuffer buffer, HarfbuzzText text, int start, int length) =>
+      _bufferAddTextFunction(buffer._pointer, text._pointer, text.length, start, length);
 
   void bufferGuessSegmentProperties(HarfbuzzBuffer buffer) =>
       _bufferGuessSegmentPropertiesFunction(buffer._pointer);
@@ -201,11 +215,15 @@ class HarfbuzzBinding {
 
   List<HarfbuzzGlyphInfo> getGlyphInfos(HarfbuzzBuffer buffer) {
     final count = malloc<ffi.Uint32>();
-    final pointer = _getGlyphsInfosFunction(buffer._pointer, count);
-    return [
-      for (var i = 0; i < count.value; i++)
-        HarfbuzzGlyphInfo(pointer[i].codepoint, pointer[i].cluster),
-    ];
+    try {
+      final pointer = _getGlyphsInfosFunction(buffer._pointer, count);
+      return [
+        for (var i = 0; i < count.value; i++)
+          HarfbuzzGlyphInfo(pointer[i].codepoint, pointer[i].cluster),
+      ];
+    } finally {
+      malloc.free(count);
+    }
   }
 
   // Private
@@ -349,17 +367,17 @@ class HarfbuzzBinding {
   late final _bufferDestroyFunction =
       _bufferDestroyFunctionPtr.asFunction<void Function(_HarfbuzzBuffer)>();
 
-  late final _bufferAddStrFunctionPtr = _lookup<
+  late final _bufferAddTextFunctionPtr = _lookup<
       ffi.NativeFunction<
           ffi.Void Function(
             ffi.Pointer<_HarfBuzzBufferStruct>,
-            ffi.Pointer<Utf8>,
+            ffi.Pointer<ffi.Uint32>,
             ffi.Int,
             ffi.UnsignedInt,
             ffi.Int,
-          )>>('hb_buffer_add_utf8');
-  late final _bufferAddStrFunction = _bufferAddStrFunctionPtr.asFunction<
-      void Function(_HarfbuzzBuffer, ffi.Pointer<Utf8>, int, int, int)>();
+          )>>('hb_buffer_add_codepoints');
+  late final _bufferAddTextFunction = _bufferAddTextFunctionPtr.asFunction<
+      void Function(_HarfbuzzBuffer, ffi.Pointer<ffi.Uint32>, int, int, int)>();
 
   late final _bufferGuessSegmentPropertiesFunctionPtr = _lookup<
           ffi.NativeFunction<

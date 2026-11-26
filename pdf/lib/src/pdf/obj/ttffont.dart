@@ -24,7 +24,6 @@ import '../font/font_metrics.dart';
 import '../font/ttf_parser.dart';
 import '../font/ttf_writer.dart';
 import '../format/array.dart';
-import '../format/base.dart';
 import '../format/dict.dart';
 import '../format/name.dart';
 import '../format/num.dart';
@@ -61,7 +60,7 @@ class PdfTtfFont extends PdfFont {
     widthsObject.inUse = s;
   }
 
-  final CIDToGIDMapType _cidToGidMapType = CIDToGIDMapType.identity;
+  PdfObjectStream? _cidToGidMap;
 
   @override
   String get subtype => font.unicode ? '/Type0' : super.subtype;
@@ -119,13 +118,16 @@ class PdfTtfFont extends PdfFont {
   }
 
   void _buildType0(PdfDict params) {
-    _buildCmap();
-
-    int charMin;
-    int charMax;
+    final maxCid = _glyphByCid.keys.fold(0, max);
+    final cidMap = _cidToGidMap;
+    if (cidMap != null) {
+      final mapping = ByteData(2 * (maxCid + 1));
+      _glyphByCid.forEach((cid, gid) => mapping.setUint16(2 * cid, gid));
+      cidMap.buf.putBytes(mapping.buffer.asUint8List());
+    }
 
     final ttfWriter = TtfWriter(font);
-    final data = ttfWriter.withGlyphIndices(font, _glyphIndices, identityCID: _cidToGidMapType == CIDToGIDMapType.identity);
+    final data = ttfWriter.withGlyphIndices(font, _glyphByCid.values.toSet().toList(), identityCID: true);
     file.buf.putBytes(data);
     file.params['/Length1'] = PdfNum(data.length);
 
@@ -138,7 +140,7 @@ class PdfTtfFont extends PdfFont {
         const PdfNum(0),
         widthsObject.ref(),
       ]),
-      '/CIDToGIDMap': _cidToGidMapType == CIDToGIDMapType.identity ? const PdfName('/Identity') : _cidToGidMap(),
+      '/CIDToGIDMap': cidMap?.ref() ?? const PdfName('/Identity'),
       '/DW': const PdfNum(1000),
       '/Subtype': const PdfName('/CIDFontType2'),
       '/CIDSystemInfo': PdfDict.values({
@@ -153,33 +155,10 @@ class PdfTtfFont extends PdfFont {
     params['/DescendantFonts'] = PdfArray([descendantFont]);
     params['/ToUnicode'] = unicodeCMap.ref();
 
-    if (_cidToGidMapType == CIDToGIDMapType.identity) {
-      charMin = 0;
-      charMax = _glyphIndices.fold<int>(0, max);
-      for (var i = charMin; i <= charMax; i++) {
-        widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(i)).advanceWidth * 1000.0).toInt()));
-      }
-    } else {
-      charMin = 0;
-      charMax = _glyphIndices.length - 1;
-      for (var i = charMin; i <= charMax; i++) {
-        widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(_glyphIndices[i])).advanceWidth * 1000.0).toInt()));
-      }
+    for (var cid = 0; cid <= maxCid; cid++) {
+      final glyph = _glyphByCid[cid] ?? cid;
+      widthsObject.params.add(PdfNum((glyphIndexMetrics(GlyphIndex(glyph)).advanceWidth * 1000).toInt()));
     }
-  }
-
-  PdfDataType _cidToGidMap() {
-    assert(_cidToGidMapType == CIDToGIDMapType.map);
-    return PdfArray(_invertGlyphIndex().map((value) => [PdfNum((value >> 16) & 0xFFFF), PdfNum(value & 0xFFFF)]).expand((value) => value));
-  }
-
-  List<int> _invertGlyphIndex() {
-    assert(_cidToGidMapType == CIDToGIDMapType.map);
-    final inverted = List.filled(_glyphIndices.fold(0, max) + 1, 0);
-    for (var i = 0; i < _glyphIndices.length; i++) {
-      inverted[_glyphIndices[i]] = i;
-    }
-    return inverted;
   }
 
   @override
@@ -193,44 +172,49 @@ class PdfTtfFont extends PdfFont {
     }
   }
 
-  final List<int> _glyphIndices = [];
+  final _glyphByCid = <int, int>{};
+  final _cidByGlyphAndSource = <(int, String), int>{};
+  late final Map<int, int> _defaultSources = _invertCharacterMap();
 
-  void _buildCmap() {
-    final glyphNotFound = '?'.runes.first;
-    if (_cidToGidMapType == CIDToGIDMapType.identity) {
-      for (var i = 0; i < _glyphIndices.length; i++) {
-        final char = font.charToGlyphIndexMap.entries.where((entry) => entry.value == _glyphIndices[i]).map((e) => e.key).firstOrNull;
-        unicodeCMap.cmap[_glyphIndices[i]] = char ?? glyphNotFound;
+  Map<int, int> _invertCharacterMap() {
+    final sources = <int, int>{};
+    for (final entry in font.charToGlyphIndexMap.entries) {
+      sources.putIfAbsent(entry.value, () => entry.key);
+    }
+    return sources;
+  }
+
+  int _nextCid = 1;
+
+  int _characterCode(int glyph, String? source) {
+    final text = source ?? String.fromCharCode(_defaultSources[glyph] ?? 0x3f);
+    return _cidByGlyphAndSource.putIfAbsent((glyph, text), () {
+      var cid = glyph;
+      if (_glyphByCid.containsKey(cid)) {
+        while (_glyphByCid.containsKey(_nextCid)) {
+          _nextCid++;
+        }
+        if (_nextCid > 0xffff) {
+          throw StateError('PDF font character code space exhausted');
+        }
+        cid = _nextCid++;
+        _cidToGidMap ??= PdfObjectStream(pdfDocument, isBinary: true);
       }
-      return;
-    }
-
-    for (var i = 0; i < _glyphIndices.length; i++) {
-      final char = font.charToGlyphIndexMap.entries.where((entry) => entry.value == _glyphIndices[i]).map((e) => e.key).firstOrNull;
-      unicodeCMap.cmap[i] = char ?? glyphNotFound;
-    }
+      _glyphByCid[cid] = glyph;
+      unicodeCMap.setSource(cid, text);
+      return cid;
+    });
   }
 
   @override
-  void putGlyphs(PdfStream stream, List<int> glyphIndices) {
+  void putGlyphs(PdfStream stream, List<int> glyphIndices, {List<String?>? sources}) {
     _setInUse(true);
     stream.putByte(0x3c);
-    final indices = <int>[];
-    for (final glyphIndex in glyphIndices) {
-      final indexInMap = _glyphIndexToMapIndex(glyphIndex);
-      stream.putBytes(latin1.encode(indexInMap.toRadixString(16).padLeft(4, '0')));
-      indices.add(indexInMap);
+    for (var i = 0; i < glyphIndices.length; i++) {
+      final cid = _characterCode(glyphIndices[i], sources?[i]);
+      stream.putBytes(latin1.encode(cid.toRadixString(16).padLeft(4, '0')));
     }
     stream.putByte(0x3e);
-  }
-
-  int _glyphIndexToMapIndex(int glyphIndex) {
-    var indexInMap = _glyphIndices.indexOf(glyphIndex);
-    if (indexInMap == -1) {
-      indexInMap = _glyphIndices.length;
-      _glyphIndices.add(glyphIndex);
-    }
-    return _cidToGidMapType == CIDToGIDMapType.identity ? glyphIndex : indexInMap;
   }
 
   @override
