@@ -685,8 +685,18 @@ class PdfGraphics {
     PdfTextRenderingMode mode = PdfTextRenderingMode.fill,
     double? rise,
     bool leftToRight = true,
+    List<String?>? sources,
   }) {
     _buf.putString('BT ');
+
+    void putGlyphs(int start, int end) {
+      final glyphs = glyphIndices.sublist(start, end);
+      if (font is PdfTtfFont && sources != null) {
+        font.putGlyphs(_buf, glyphs, sources: sources.sublist(start, end));
+      } else {
+        font.putGlyphs(_buf, glyphs);
+      }
+    }
 
     final tracking = charSpace ?? 0;
     final clusterSpacing = font is PdfTtfFont && tracking != 0 && size != 0 &&
@@ -707,13 +717,13 @@ class PdfGraphics {
       var start = 0;
       for (var index = 0; index < glyphIndices.length; index++) {
         if ((font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0) > 0) {
-          font.putGlyphs(_buf, glyphIndices.sublist(start, index + 1));
+          putGlyphs(start, index + 1);
           PdfNum(-tracking * 1000 / size).output(_page, _buf);
           start = index + 1;
         }
       }
       if (start < glyphIndices.length) {
-        font.putGlyphs(_buf, glyphIndices.sublist(start));
+        putGlyphs(start, glyphIndices.length);
       }
     } else if (font is PdfTtfFont && clusterSpacing) {
       var start = 0;
@@ -721,7 +731,7 @@ class PdfGraphics {
       for (var index = 0; index < glyphIndices.length; index++) {
         final advance = font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0;
         if (advance > 0 && index > start) {
-          font.putGlyphs(_buf, glyphIndices.sublist(start, index));
+          putGlyphs(start, index);
           if (hasAdvance) {
             PdfNum(-tracking * 1000 / size).output(_page, _buf);
           }
@@ -732,12 +742,12 @@ class PdfGraphics {
           hasAdvance = true;
         }
       }
-      font.putGlyphs(_buf, glyphIndices.sublist(start));
+      putGlyphs(start, glyphIndices.length);
       if (hasAdvance) {
         PdfNum(-tracking * 1000 / size).output(_page, _buf);
       }
     } else {
-      font.putGlyphs(_buf, glyphIndices);
+      putGlyphs(0, glyphIndices.length);
     }
     _buf.putString(']TJ ');
 

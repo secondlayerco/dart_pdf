@@ -20,6 +20,7 @@ import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
+import '../pdf/format/string.dart';
 import '../shaping/shaping.dart';
 import 'brush.dart';
 import 'clip_path.dart';
@@ -174,7 +175,14 @@ class SvgText extends SvgOperation {
       }
       brush.stroke!.setStrokeColor(this, canvas);
       _setGlyphSpace(canvas);
+      final repeatsFill = brush.fill!.isNotEmpty;
+      if (repeatsFill) {
+        canvas.beginMarkedContent('Span', properties: {'/ActualText': PdfString.fromString('')});
+      }
       _drawFontSpans(canvas, mode: PdfTextRenderingMode.stroke);
+      if (repeatsFill) {
+        canvas.endMarkedContent();
+      }
       canvas.restoreContext();
     }
   }
@@ -205,6 +213,7 @@ class SvgText extends SvgOperation {
           x,
           0,
           mode: mode,
+          sources: shapingResult.sources,
           charSpace: brush.letterSpacing?.sizeValue,
           leftToRight: shapingResult.leftToRight);
       if (oblique) {

@@ -1,7 +1,7 @@
 // This class uses Harfbuzz and bidi algorithm to shape text and return glyphs from a given font and text
 
-import 'dart:math' show min;
 import 'package:bidi/bidi.dart' as bidi;
+import 'package:characters/characters.dart';
 
 import '../pdf/font/font_metrics.dart';
 import '../pdf/font/ttf_parser.dart';
@@ -56,15 +56,17 @@ extension type ListVisual<T>(List<T> list)
 
 class ShapingResult {
   ShapingResult.fromLogicalOrder(this.font, this.glyphsLogical,
-      {required this.leftToRight});
+      {required this.leftToRight, List<String?>? sources})
+      : sources = sources ?? List.filled(glyphsLogical.length, null, growable: true);
 
   ShapingResult.empty(this.font, {required this.leftToRight})
-      : glyphsLogical = ListLogical.empty();
+      : glyphsLogical = ListLogical.empty(), sources = [];
 
   ShapingResult clone() =>
       ShapingResult.fromLogicalOrder(font, ListLogical([...glyphsLogical]),
-          leftToRight: leftToRight);
+          leftToRight: leftToRight, sources: [...sources]);
 
+  final List<String?> sources;
   final PdfTtfFont font;
   final bool leftToRight;
 
@@ -83,6 +85,7 @@ class ShapingResult {
   void append(ShapingResult other) {
     assert(compatible(other), 'It does not make sense to append incompatible results');
     glyphsLogical.addAll(other.glyphsLogical);
+    sources.addAll(other.sources);
   }
 
   @override
@@ -268,212 +271,140 @@ class Shaping {
         startingLocation: startingLocation, endingLocation: currentWidth);
   }
 
-  // Input text and output shaping results are in logical order
   ShapingOutput shape2(List<int> text, List<int> embeddingLevels,
       PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts,
-      {required bool leftToRight}) {
-    for (final font in [primaryFont, ...fallbackFonts]) {
-      if (_faces.containsKey(font.fontName)) continue;
-      _addFont(font);
-    }
+      {required bool leftToRight}) =>
+      _shapeSpans(
+          BidiSpan.createBidiSpans2(text, embeddingLevels,
+              leftToRight: leftToRight),
+          primaryFont,
+          fallbackFonts);
 
-    if (text.isEmpty) {
+  ShapingOutput shape(
+          String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts) =>
+      _shapeSpans(BidiSpan.createBidiSpans(text), primaryFont, fallbackFonts);
+
+  static final _defaultIgnorable =
+      RegExp(r'^\p{Default_Ignorable_Code_Point}$', unicode: true);
+
+  ShapingOutput _shapeSpans(List<BidiSpan> spans, PdfTtfFont primaryFont,
+      List<PdfTtfFont> fallbackFonts) {
+    if (spans.isEmpty) {
       return ShapingOutput.empty();
     }
 
     final primaryFontSubFamily = _getFontSubFamily(primaryFont);
-    final orderedFonts = <PdfTtfFont?>[
+    final orderedFonts = [
       primaryFont,
-      primaryFont,
-      ...fallbackFonts
-          .where((f) => _getFontSubFamily(f) == primaryFontSubFamily),
-      ...fallbackFonts
-          .where((f) => _getFontSubFamily(f) != primaryFontSubFamily),
-      null
-    ].map((font) => font).toList();
-
-    // Is there a font that supports all runes?
-    // Skip first one because it's given twice in the ordered fonts
-    final commonFont = orderedFonts.skip(1).firstWhere(
-        (f) => text.every((rune) => f?.isRuneSupported(rune) == true),
-        orElse: () => null);
-
-    final bidiSpans = BidiSpan.createBidiSpans2(text, embeddingLevels,
-        leftToRight: leftToRight);
-
-    final runeAndFonts = <_RunesAndFont>[];
-    for (final span in bidiSpans) {
-      final spanRuneAndFonts = <_RunesAndFont>[];
-      for (var rune in span.text.runes) {
-        var font = commonFont ??
-            orderedFonts.firstWhere((f) => f?.isRuneSupported(rune) != false);
-        if (font != null) {
-          orderedFonts[1] = font;
-        }
-        if (font == null) {
-          rune = '?'.runes.first;
-          font = primaryFont;
-        }
-
-        if (spanRuneAndFonts.isEmpty || font != spanRuneAndFonts.last.font) {
-          spanRuneAndFonts
-              .add(_RunesAndFont([rune], font, leftToRight: span.leftToRight));
-        } else {
-          spanRuneAndFonts.last.runes.add(rune);
-        }
-      }
-
-      if (span.leftToRight) {
-        runeAndFonts.addAll(spanRuneAndFonts);
-      } else {
-        runeAndFonts.addAll(spanRuneAndFonts.reversed);
-      }
-    }
-
-    final textsAndFonts =
-        runeAndFonts.map((raf) => raf.toTextAndFont()).toList();
+      ...fallbackFonts.where((f) => _getFontSubFamily(f) == primaryFontSubFamily),
+      ...fallbackFonts.where((f) => _getFontSubFamily(f) != primaryFontSubFamily),
+    ];
 
     final output = ListVisual<ShapingResult>.empty();
-
-    for (final textAndFont in textsAndFonts) {
-      final face = Shaping._instance._faces[textAndFont.font.fontName];
-      if (face == null) {
-        throw Exception('Font is missing');
+    for (final span in spans) {
+      final codepoints = <int>[];
+      List<int>? originalCodepoints;
+      final runs = <_FontRun>[];
+      void append(Iterable<int> runes, PdfTtfFont font) {
+        if (runs.isEmpty || runs.last.font != font) {
+          runs.add(_FontRun(font, codepoints.length));
+        }
+        codepoints.addAll(runes);
+        runs.last.end = codepoints.length;
       }
 
-      final faceFont = _hb.fontCreate(face);
-      final buffer = _hb.bufferCreate();
-
-      _hb.bufferAddString(buffer, textAndFont.text);
-      _hb.bufferGuessSegmentProperties(buffer);
-      _hb.bufferSetDirection(
-          buffer,
-          textAndFont.leftToRight
-              ? HarfBuzzDirection.leftToRight
-              : HarfBuzzDirection.rightToLeft);
-
-      _hb.shape(faceFont, buffer);
-
-      output.add(ShapingResult.fromLogicalOrder(
-        textAndFont.font,
-        ListLogical(
-          _hb
-              .getGlyphInfos(buffer)
-              .map((info) => GlyphIndex(info.codepoint))
-              .toList(),
-        ),
-        leftToRight: textAndFont.leftToRight,
-      ));
-
-      _hb.bufferDestroy(buffer);
-      _hb.fontDestroy(faceFont);
+      for (final cluster in span.text.characters) {
+        final runes = cluster.runes;
+        if (runes.every(primaryFont.isRuneSupported)) {
+          append(runes, primaryFont);
+          continue;
+        }
+        final requiredRunes = runes
+            .where((rune) =>
+                !_defaultIgnorable.hasMatch(String.fromCharCode(rune)))
+            .toSet();
+        final font = orderedFonts
+            .where((font) => requiredRunes.every(font.isRuneSupported))
+            .firstOrNull;
+        if (font != null) {
+          append(runes, font);
+          continue;
+        }
+        var activeFont = primaryFont;
+        for (final rune in runes) {
+          if (!requiredRunes.contains(rune)) {
+            append([rune], activeFont);
+            continue;
+          }
+          final font = orderedFonts
+              .where((font) => font.isRuneSupported(rune))
+              .firstOrNull;
+          if (font == null) {
+            originalCodepoints ??= span.text.runes.toList();
+          }
+          activeFont = font ?? primaryFont;
+          final renderedRune = font == null ? 0x3f : rune;
+          append([renderedRune], activeFont);
+        }
+      }
+      if (runs.isEmpty) {
+        continue;
+      }
+      final text = HarfbuzzText(codepoints);
+      try {
+        for (final run in span.leftToRight ? runs : runs.reversed) {
+          final face = _faces.putIfAbsent(run.font.fontName,
+              () => _hb.faceFromData(run.font.font.bytes, 0));
+          final faceFont = _hb.fontCreate(face);
+          final buffer = _hb.bufferCreate();
+          try {
+            _hb.bufferAddText(buffer, text, run.start, run.end - run.start);
+            _hb.bufferGuessSegmentProperties(buffer);
+            _hb.bufferSetDirection(
+                buffer,
+                span.leftToRight
+                    ? HarfBuzzDirection.leftToRight
+                    : HarfBuzzDirection.rightToLeft);
+            _hb.shape(faceFont, buffer);
+            final glyphs = _hb.getGlyphInfos(buffer);
+            output.add(ShapingResult.fromLogicalOrder(
+                run.font,
+                ListLogical(glyphs
+                    .map((info) => GlyphIndex(info.codepoint))
+                    .toList()),
+                leftToRight: span.leftToRight,
+                sources: _glyphSources(glyphs, originalCodepoints ?? codepoints, run.end, span.leftToRight)));
+          } finally {
+            _hb.bufferDestroy(buffer);
+            _hb.fontDestroy(faceFont);
+          }
+        }
+      } finally {
+        text.release();
+      }
     }
 
-    return ShapingOutput.fromVisualOrder(output,
-        leftToRight: output.first.leftToRight);
+    return output.isEmpty
+        ? ShapingOutput.empty()
+        : ShapingOutput.fromVisualOrder(output,
+            leftToRight: output.first.leftToRight);
   }
 
-  // Input text and output shaping results are in logical order
-  ShapingOutput shape(
-      String text, PdfTtfFont primaryFont, List<PdfTtfFont> fallbackFonts) {
-    for (final font in [primaryFont, ...fallbackFonts]) {
-      if (_faces.containsKey(font.fontName)) continue;
-      _addFont(font);
-    }
-
-    if (text.isEmpty) {
-      return ShapingOutput.empty();
-    }
-
-    final primaryFontSubFamily = _getFontSubFamily(primaryFont);
-    final orderedFonts = <PdfTtfFont?>[
-      primaryFont,
-      primaryFont,
-      ...fallbackFonts
-          .where((f) => _getFontSubFamily(f) == primaryFontSubFamily),
-      ...fallbackFonts
-          .where((f) => _getFontSubFamily(f) != primaryFontSubFamily),
-      null
-    ].map((font) => font).toList();
-
-    // Is there a font that supports all runes?
-    // Skip first one because it's given twice in the ordered fonts
-    final commonFont = orderedFonts.skip(1).firstWhere(
-        (f) => text.runes.every((rune) => f?.isRuneSupported(rune) == true),
-        orElse: () => null);
-
-    final bidiSpans = BidiSpan.createBidiSpans(text);
-
-    final runeAndFonts = <_RunesAndFont>[];
-    for (final span in bidiSpans) {
-      final spanRuneAndFonts = <_RunesAndFont>[];
-      for (var rune in span.text.runes) {
-        var font = commonFont ??
-            orderedFonts.firstWhere((f) => f?.isRuneSupported(rune) != false);
-        if (font != null) {
-          orderedFonts[1] = font;
-        }
-        if (font == null) {
-          rune = '?'.runes.first;
-          font = primaryFont;
-        }
-
-        if (spanRuneAndFonts.isEmpty || font != spanRuneAndFonts.last.font) {
-          spanRuneAndFonts
-              .add(_RunesAndFont([rune], font, leftToRight: span.leftToRight));
-        } else {
-          spanRuneAndFonts.last.runes.add(rune);
-        }
+  static List<String?> _glyphSources(List<HarfbuzzGlyphInfo> glyphs,
+      List<int> codepoints, int runEnd, bool leftToRight) {
+    final sources = List<String?>.filled(glyphs.length, null, growable: true);
+    // Only a single-glyph cluster has an unambiguous per-glyph source.
+    var end = runEnd;
+    for (var n = 0; n < glyphs.length; n++) {
+      final i = leftToRight ? glyphs.length - 1 - n : n;
+      final start = glyphs[i].cluster;
+      final next = leftToRight ? i - 1 : i + 1;
+      if (start < end && (next < 0 || next >= glyphs.length || glyphs[next].cluster != start)) {
+        sources[i] = String.fromCharCodes(codepoints, start, end);
       }
-
-      if (span.leftToRight) {
-        runeAndFonts.addAll(spanRuneAndFonts);
-      } else {
-        runeAndFonts.addAll(spanRuneAndFonts.reversed);
-      }
+      end = start;
     }
-
-    final textsAndFonts =
-        runeAndFonts.map((raf) => raf.toTextAndFont()).toList();
-
-    final output = ListVisual<ShapingResult>.empty();
-
-    for (final textAndFont in textsAndFonts) {
-      final face = Shaping._instance._faces[textAndFont.font.fontName];
-      if (face == null) {
-        throw Exception('Font is missing');
-      }
-
-      final faceFont = _hb.fontCreate(face);
-      final buffer = _hb.bufferCreate();
-
-      _hb.bufferAddString(buffer, textAndFont.text);
-      _hb.bufferGuessSegmentProperties(buffer);
-      _hb.bufferSetDirection(
-          buffer,
-          textAndFont.leftToRight
-              ? HarfBuzzDirection.leftToRight
-              : HarfBuzzDirection.rightToLeft);
-
-      _hb.shape(faceFont, buffer);
-
-      output.add(ShapingResult.fromLogicalOrder(
-        textAndFont.font,
-        ListLogical(
-          _hb
-              .getGlyphInfos(buffer)
-              .map((info) => GlyphIndex(info.codepoint))
-              .toList(),
-        ),
-        leftToRight: textAndFont.leftToRight,
-      ));
-
-      _hb.bufferDestroy(buffer);
-      _hb.fontDestroy(faceFont);
-    }
-
-    return ShapingOutput.fromVisualOrder(output,
-        leftToRight: output.first.leftToRight);
+    return sources;
   }
 
   void dispose() {
@@ -481,10 +412,6 @@ class Shaping {
       _hb.faceDestroy(face);
     }
     _faces.clear();
-  }
-
-  void _addFont(PdfTtfFont font) {
-    _faces[font.fontName] = _hb.faceFromData(font.font.bytes, 0);
   }
 }
 
@@ -503,35 +430,12 @@ String _getFontSubFamily(PdfFont font) {
   return 'regular';
 }
 
-class _RunesAndFont {
-  _RunesAndFont(this.runes, this.font, {required this.leftToRight});
+class _FontRun {
+  _FontRun(this.font, this.start) : end = start;
 
-  final List<int> runes;
   final PdfTtfFont font;
-  final bool leftToRight;
-
-  _TextAndFont toTextAndFont() =>
-      _TextAndFont(String.fromCharCodes(runes), font, leftToRight: leftToRight);
-
-  @override
-  String toString() =>
-      'RuneAndFont(font: ${font.fontName}, LTR: $leftToRight, runes: $runes)';
-}
-
-class _TextAndFont {
-  _TextAndFont(this.text, this.font, {required this.leftToRight});
-
-  String text;
-  final PdfTtfFont font;
-  final bool leftToRight;
-
-  void addRune(int rune) {
-    text += String.fromCharCode(rune);
-  }
-
-  @override
-  String toString() =>
-      'TextAndFont(font: ${font.fontName}, LTR: $leftToRight, text: ` $text ` )';
+  final int start;
+  int end;
 }
 
 class BidiSpan {
@@ -546,92 +450,39 @@ class BidiSpan {
   @override
   String toString() => 'BidiSpan(text: ` $text `  , leftToRight: $leftToRight)';
 
+  static final _unpairedSurrogate = RegExp(r'[\uD800-\uDFFF]', unicode: true);
+
   static List<BidiSpan> createBidiSpans2(List<int> text, List<int> levels,
       {required bool leftToRight}) {
-    if (levels.isEmpty) {
-      return [];
-    }
-
+    if (text.isEmpty) return [];
     final spans = <BidiSpan>[];
-
-    // for (final paragraph in paragraphs) {
-    final paragraphText = String.fromCharCodes(text);
-    final paragraphSpans = <BidiSpan>[];
-    // final levels = paragraph.embeddingLevels;
-    // if (levels.isEmpty) {
-    //   continue;
-    // }
-
     var start = 0;
-    var level = levels.first;
-
-    // Use min() to handle edge cases where embeddingLevels length differs from text length
-    // (e.g., with combining marks or paragraph separators), preventing RangeError
-    final endIndex = min(levels.length, paragraphText.length);
-    for (var i = 1; i < endIndex; i++) {
-      final curLevel = levels[i];
-      if (level == curLevel) {
-        continue;
-      }
-
-      paragraphSpans.add(BidiSpan(paragraphText.substring(start, i), level));
-      start = i;
-      level = curLevel;
+    var level = levels.firstOrNull ?? (leftToRight ? 0 : 1);
+    void finish(int end) {
+      final source = String.fromCharCodes(text, start, end);
+      spans.add(BidiSpan(source.replaceAll(_unpairedSurrogate, '\ufffd'), level));
     }
 
-    paragraphSpans
-        .add(BidiSpan(paragraphText.substring(start, endIndex), level));
-
-    if (leftToRight) {
-      spans.addAll(paragraphSpans);
-    } else {
-      spans.addAll(paragraphSpans.reversed);
-    }
-    // }
-
-    return spans.toList();
-  }
-
-  static List<BidiSpan> createBidiSpans(String text) {
-    final paragraphs = bidi.BidiString.fromLogical(text).paragraphs;
-
-    final spans = <BidiSpan>[];
-
-    for (final paragraph in paragraphs) {
-      final paragraphText = String.fromCharCodes(paragraph.text);
-      final paragraphSpans = <BidiSpan>[];
-      final levels = paragraph.embeddingLevels;
-      if (levels.isEmpty) {
+    // Each level indexes its input element: a UTF-16 unit from bidi, or a scalar from a rune list.
+    for (var i = 1; i < text.length && i < levels.length; i++) {
+      final unit = text[i];
+      if (unit >= 0xdc00 && unit <= 0xdfff && text[i - 1] >= 0xd800 && text[i - 1] <= 0xdbff) {
         continue;
       }
-
-      var start = 0;
-      var level = levels.first;
-
-      // Use min() to handle edge cases where embeddingLevels length differs from text length
-      // (e.g., with combining marks or paragraph separators), preventing RangeError
-    final endIndex = min(levels.length, paragraphText.length);
-      for (var i = 1; i < endIndex; i++) {
-        final curLevel = levels[i];
-        if (level == curLevel) {
-          continue;
-        }
-
-        paragraphSpans.add(BidiSpan(paragraphText.substring(start, i), level));
+      if (levels[i] != level) {
+        finish(i);
         start = i;
-        level = curLevel;
-      }
-
-      paragraphSpans
-          .add(BidiSpan(paragraphText.substring(start, endIndex), level));
-
-      if (paragraph.isLeftToRight) {
-        spans.addAll(paragraphSpans);
-      } else {
-        spans.addAll(paragraphSpans.reversed);
+        level = levels[i];
       }
     }
-
-    return spans.toList();
+    finish(text.length);
+    return leftToRight ? spans : spans.reversed.toList();
   }
+
+  static List<BidiSpan> createBidiSpans(String text) =>
+      bidi.BidiString.fromLogical(text, skipReshaping: true)
+          .paragraphs
+          .expand((p) => createBidiSpans2(p.text, p.embeddingLevels,
+              leftToRight: p.isLeftToRight))
+          .toList();
 }

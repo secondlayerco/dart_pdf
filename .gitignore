@@ -14,6 +14,7 @@ doc/api/
 
 *.pdf
 *.ttf
+!pdf/test/fixtures/Joining*.ttf
 .DS_Store
 .dart_tool/
 
