@@ -19,8 +19,10 @@ import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
 import 'brush.dart';
+import 'link_region.dart';
 import 'operation.dart';
 import 'painter.dart';
+import 'path.dart';
 
 @immutable
 class SvgClipPath {
@@ -57,14 +59,20 @@ class SvgClipPath {
 
   bool get isNotEmpty => !isEmpty;
 
-  void apply(PdfGraphics canvas) {
+  SvgLinkClip? apply(PdfGraphics canvas) {
     if (isEmpty) {
-      return;
+      return null;
     }
-
+    SvgOperation? only;
+    var count = 0;
     for (final child in children!) {
+      only = child;
+      count++;
       child!.draw(canvas);
     }
     canvas.clipPath();
+    return count == 1 && only is SvgPath && painter?.page != null
+        ? SvgLinkClip(only, canvas.getTransform())
+        : null;
   }
 }

@@ -397,6 +397,7 @@ class PdfAnnotUrlLink extends PdfAnnotBase {
   PdfAnnotUrlLink({
     required PdfRect rect,
     required this.url,
+    this.quadPoints,
     PdfBorder? border,
     Set<PdfAnnotFlags>? flags,
     DateTime? date,
@@ -415,10 +416,18 @@ class PdfAnnotUrlLink extends PdfAnnotBase {
         );
 
   final String url;
+  /// Four counterclockwise points per active quadrilateral, in page coordinates.
+  final List<PdfPoint>? quadPoints;
 
   @override
   void build(PdfPage page, PdfObject object, PdfDict params) {
     super.build(page, object, params);
+    final points = quadPoints;
+    if (points != null) {
+      params['/QuadPoints'] = PdfArray.fromNum([
+        for (final p in points) ...[p.x, p.y]
+      ]);
+    }
     params['/A'] = PdfDict.values(
       {
         '/S': const PdfName('/URI'),

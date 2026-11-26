@@ -26,6 +26,7 @@ import '../widgets/widget.dart';
 import 'brush.dart';
 import 'color.dart';
 import 'group.dart';
+import 'link_region.dart';
 import 'parser.dart';
 import 'pattern.dart';
 
@@ -79,6 +80,8 @@ class SvgPainter {
 
   /// Page the drawing lands on; link annotations need it, and a painter without one draws links unclickable.
   final PdfPage? page;
+
+  final linkClips = <SvgLinkClip>[];
 
   /// Patterns parsed so far, by id
   final patterns = <String, SvgPattern>{};
