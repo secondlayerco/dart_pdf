@@ -79,6 +79,61 @@ void main() {
   }
 
   group('SVG pattern fills ::', () {
+    test('a rotated tile with an opaque base does not expose the page',
+        () async {
+      final image = await raster('<defs>'
+          '${pattern('width="28" height="28" patternTransform="rotate(17)"', '<g transform="matrix(1 0 0 1 0 0)"><path d="M0 0L28 0L28 28L0 28Z" fill="#ff0000"/></g><rect x="8" y="8" width="12" height="12" fill="#0000ff"/>')}'
+          '</defs>'
+          '<path d="M10 10H200V150H10Z M80 60H120V90H80Z" '
+          'fill="url(#p)" fill-rule="evenodd"/>');
+      var blue = 0;
+      var exposed = 0;
+      for (var y = 12; y < 148; y++) {
+        for (var x = 12; x < 198; x++) {
+          if (x >= 80 && x < 120 && y >= 60 && y < 90) {
+            continue;
+          }
+          final pixel = image.getPixel(x, y);
+          if (pixel.b > 240) {
+            blue++;
+          }
+          if (pixel.g > 20) {
+            exposed++;
+          }
+        }
+      }
+      expect(blue, greaterThan(2500), reason: 'the repeated marks remain');
+      expect(exposed, 0, reason: 'white seams introduce green into both inks');
+      expect(image.getPixel(8, 8).g, 255, reason: 'the fill stays in its path');
+      expect(image.getPixel(95, 75).g, 255, reason: 'the hole stays unpainted');
+    });
+
+    test('a partial or translucent tile base leaves the page visible',
+        () async {
+      final image = await raster('<defs>'
+          '${pattern('width="28" height="28" patternTransform="rotate(17)"', '<rect width="14" height="28" fill="#f00"/>', id: 'partial')}'
+          '${pattern('width="28" height="28" patternTransform="rotate(17)"', '<g opacity=".5"><rect width="28" height="28" fill="#f00"/></g>', id: 'translucent')}'
+          '${pattern('width="28" height="28" patternTransform="rotate(17)"', '<rect width="28" height="28" fill="#f00"/>', id: 'opaque')}'
+          '${pattern('width="28" height="28"', '<path d="M0 0H28V28Z" fill="#f00"/>', id: 'triangle')}'
+          '</defs>'
+          '<path d="M0 0H100V150H0Z" fill="url(#partial)"/>'
+          '<path d="M100 0H200V150H100Z" fill="url(#translucent)"/>'
+          '<path d="M200 0H300V150H200Z" fill="url(#opaque)" fill-opacity=".5"/>'
+          '<path d="M300 0H320V150H300Z" fill="url(#triangle)"/>');
+      expect(image.getPixel(6, 10).g, 0);
+      expect(image.getPixel(19, 10).g, 255);
+      expect(image.getPixel(110, 10).g, closeTo(127, 2));
+      expect(image.getPixel(305, 8).g, 0);
+      expect(image.getPixel(316, 20).g, 255,
+          reason: 'a triangle with the tile bounds does not cover it');
+      for (var y = 5; y < 145; y++) {
+        for (var x = 205; x < 295; x++) {
+          expect(image.getPixel(x, y).g, closeTo(127, 2),
+              reason: 'the patterned fill has one opacity at ($x,$y)');
+        }
+      }
+    });
+
     test('a pattern becomes one tiling pattern placed in page space', () async {
       final pdf = await pdfOf('<defs>'
           '${pattern('x="2" y="3" width="12" height="8" patternTransform="translate(5 7) rotate(90)"', '<rect width="6" height="8" fill="#ff0000"/>')}'

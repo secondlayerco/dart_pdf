@@ -243,12 +243,14 @@ class SvgText extends SvgOperation {
     return !subFamily.contains('italic') && !subFamily.contains('oblique');
   }
 
-  /// Makes the run clickable. The rect is an annotation on the page, so it takes page coordinates:
-  /// the run box travels through the transform this text space is drawn under.
+  /// Makes the visible portion of the run clickable in page coordinates.
   void _addLinkAnnotation(PdfGraphics canvas) {
     final url = brush.dataHref;
     final page = painter.page;
-    if (url == null || page == null || metrics.advanceWidth <= 0) {
+    if (url == null ||
+        page == null ||
+        painter.linkDefinitionDepth != 0 ||
+        metrics.advanceWidth <= 0) {
       return;
     }
     addSvgTextLink(page, url, canvas.getTransform(), metrics.advanceWidth,

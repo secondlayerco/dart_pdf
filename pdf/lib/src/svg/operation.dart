@@ -15,9 +15,11 @@
  */
 
 import 'package:meta/meta.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
+import '../widgets/geometry.dart' show transformRect;
 import 'brush.dart';
 import 'clip_path.dart';
 import 'group.dart';
@@ -104,10 +106,11 @@ abstract class SvgOperation {
     if (transform.isNotEmpty) {
       canvas.setTransform(transform.matrix!);
     }
-    final linkClip = clip.apply(canvas);
+    final linkClip = clip.apply(canvas, boundingBox);
     if (linkClip != null) {
       painter.linkClips.add(linkClip);
     }
+    var pushedMask = false;
     try {
       if (brush.opacity! < 1.0 || brush.blendMode != null) {
         canvas.setGraphicState(PdfGraphicState(
@@ -115,8 +118,10 @@ abstract class SvgOperation {
           blendMode: brush.blendMode,
         ));
       }
-      if (brush.mask != null) {
-        brush.mask!.apply(canvas);
+      final linkMask = brush.mask?.apply(canvas, boundingBox);
+      if (linkMask != null) {
+        painter.linkClips.add(linkMask);
+        pushedMask = true;
       }
       if (brush.mask != null || brush.opacity! < 1 || brush.blendMode != null) {
         canvas.drawTransparencyGroup(
@@ -125,6 +130,9 @@ abstract class SvgOperation {
         paintShape(canvas);
       }
     } finally {
+      if (pushedMask) {
+        painter.linkClips.removeLast();
+      }
       if (linkClip != null) {
         painter.linkClips.removeLast();
       }
@@ -146,6 +154,25 @@ abstract class SvgOperation {
 
   @protected
   void drawShape(PdfGraphics canvas);
+
+  PdfRect transformedBoundingBox([Matrix4? parent]) {
+    final local = transform.matrix;
+    final matrix = parent == null || local == null
+        ? parent ?? local
+        : (parent.clone()..multiply(local));
+    return boundingBoxIn(matrix);
+  }
+
+  PdfRect boundingBoxIn(Matrix4? matrix) {
+    final box = boundingBox();
+    return matrix == null || identical(box, PdfRect.zero)
+        ? box
+        : transformRect(matrix, box);
+  }
+
+  static Matrix4 objectBoundingBoxTransform(PdfRect box) =>
+      Matrix4.translationValues(box.x, box.y, 0)
+        ..scaleByDouble(box.width, box.height, 1.0, 1.0);
 
   PdfRect boundingBox();
 }

@@ -16,14 +16,17 @@
 
 import 'dart:math' as math;
 
+import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
 import 'brush.dart';
 import 'clip_path.dart';
+import 'color.dart';
 import 'operation.dart';
 import 'painter.dart';
 import 'parser.dart';
+import 'pattern.dart';
 import 'transform.dart';
 
 class SvgPath extends SvgOperation {
@@ -203,16 +206,22 @@ class SvgPath extends SvgOperation {
 
   @override
   void paintShape(PdfGraphics canvas) {
-    if (brush.fill!.isNotEmpty) {
+    final fill = brush.fill;
+    if (fill != null && fill.isNotEmpty) {
       canvas.saveContext();
-      brush.fill!.setFillColor(this, canvas);
-      if (brush.effectiveFillOpacity < 1) {
-        canvas.setGraphicState(
-            PdfGraphicState(opacity: brush.effectiveFillOpacity));
+      final opacity = brush.effectiveFillOpacity;
+      final background = fill is SvgPattern ? fill.opaqueBackground : null;
+      if (background != null) {
+        _paintBackedPattern(canvas, fill, background, opacity);
+      } else {
+        fill.setFillColor(this, canvas);
+        if (opacity < 1) {
+          canvas.setGraphicState(PdfGraphicState(opacity: opacity));
+        }
+        canvas
+          ..drawShape(d)
+          ..fillPath(evenOdd: brush.fillEvenOdd!);
       }
-      canvas
-        ..drawShape(d)
-        ..fillPath(evenOdd: brush.fillEvenOdd!);
       canvas.restoreContext();
     }
 
@@ -236,13 +245,44 @@ class SvgPath extends SvgOperation {
     }
   }
 
+  void _paintBackedPattern(
+      PdfGraphics canvas, SvgColor fill, PdfColor background, double opacity) {
+    final box = boundingBox();
+    if (![box.x, box.y, box.width, box.height].every((v) => v.isFinite) ||
+        box.width <= 0 ||
+        box.height <= 0) {
+      return;
+    }
+    final cover = PdfRect(box.x - 1, box.y - 1, box.width + 2, box.height + 2);
+    canvas
+      ..drawShape(d)
+      ..clipPath(evenOdd: brush.fillEvenOdd!);
+    if (opacity < 1) {
+      canvas.setGraphicState(PdfGraphicState(opacity: opacity));
+    }
+    // Composite the opaque tile backdrop once through the shape's edge and opacity.
+    canvas.drawTransparencyGroup(canvas.surfaceBounds ?? painter.boundingBox,
+        (group) {
+      group
+        ..setFillColor(background)
+        ..drawBox(cover)
+        ..fillPath();
+      fill.setFillColor(this, group);
+      group
+        ..drawBox(cover)
+        ..fillPath();
+    });
+  }
+
   @override
   void drawShape(PdfGraphics canvas) {
     canvas.drawShape(d);
   }
 
   @override
-  PdfRect boundingBox() {
-    return PdfGraphics.shapeBoundingBox(d);
-  }
+  PdfRect boundingBox() => boundingBoxIn(null);
+
+  @override
+  PdfRect boundingBoxIn(Matrix4? matrix) =>
+      PdfGraphics.shapeBoundingBox(d, matrix);
 }
