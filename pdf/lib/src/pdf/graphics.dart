@@ -136,8 +136,11 @@ class PdfGraphics {
     final bounds = page.params['/BBox'];
     if (bounds is PdfArray<PdfNum> && bounds.values.length == 4) {
       final values = bounds.values;
-      return PdfRect.fromLTRB(values[0].value.toDouble(), values[1].value.toDouble(),
-          values[2].value.toDouble(), values[3].value.toDouble());
+      return PdfRect.fromLTRB(
+          values[0].value.toDouble(),
+          values[1].value.toDouble(),
+          values[2].value.toDouble(),
+          values[3].value.toDouble());
     }
     return null;
   }
@@ -353,7 +356,8 @@ class PdfGraphics {
       return true;
     }());
 
-    final hasProps = mcid != null || (properties != null && properties.isNotEmpty);
+    final hasProps =
+        mcid != null || (properties != null && properties.isNotEmpty);
     _buf.putString('/$tag ');
     if (hasProps) {
       final dict = PdfDict<PdfDataType>();
@@ -374,7 +378,8 @@ class PdfGraphics {
     assert(() {
       if (_page.pdfDocument.settings.verbose) {
         _buf.putString(' ' * math.max(0, _commentIndent - _indent - 10));
-        _buf.putComment('beginMarkedContent($tag${mcid != null ? ", mcid: $mcid" : ""})');
+        _buf.putComment(
+            'beginMarkedContent($tag${mcid != null ? ", mcid: $mcid" : ""})');
       }
       _indent += _indentAmount;
       return true;
@@ -672,7 +677,6 @@ class PdfGraphics {
     _page.altered = true;
   }
 
-
   void drawGlyphs(
     PdfFont font,
     double size,
@@ -699,8 +703,11 @@ class PdfGraphics {
     }
 
     final tracking = charSpace ?? 0;
-    final clusterSpacing = font is PdfTtfFont && tracking != 0 && size != 0 &&
-        glyphIndices.any((glyph) => (font.font.glyphInfoMap[glyph]?.advanceWidth ?? 0) <= 0);
+    final clusterSpacing = font is PdfTtfFont &&
+        tracking != 0 &&
+        size != 0 &&
+        glyphIndices.any(
+            (glyph) => (font.font.glyphInfoMap[glyph]?.advanceWidth ?? 0) <= 0);
     setFont(font, size,
         charSpace: clusterSpacing ? 0 : charSpace,
         mode: mode,
@@ -716,7 +723,8 @@ class PdfGraphics {
       // Right-to-left runs come in visual order, where a cluster's marks precede its advancing glyph.
       var start = 0;
       for (var index = 0; index < glyphIndices.length; index++) {
-        if ((font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0) > 0) {
+        if ((font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0) >
+            0) {
           putGlyphs(start, index + 1);
           PdfNum(-tracking * 1000 / size).output(_page, _buf);
           start = index + 1;
@@ -729,7 +737,8 @@ class PdfGraphics {
       var start = 0;
       var hasAdvance = false;
       for (var index = 0; index < glyphIndices.length; index++) {
-        final advance = font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0;
+        final advance =
+            font.font.glyphInfoMap[glyphIndices[index]]?.advanceWidth ?? 0;
         if (advance > 0 && index > start) {
           putGlyphs(start, index);
           if (hasAdvance) {
@@ -755,8 +764,6 @@ class PdfGraphics {
 
     _page.altered = true;
   }
-
-
 
   void reset() {
     assert(() {
@@ -1197,12 +1204,13 @@ class PdfGraphics {
   }
 
   /// Calculates the bounding box of an SVG path
-  static PdfRect shapeBoundingBox(String d) {
-    final proxy = _PathBBProxy();
+  static PdfRect shapeBoundingBox(String d, [Matrix4? transform]) {
+    final proxy = _PathBBProxy(transform);
     try {
       writeSvgPathDataToPath(d, proxy);
     } catch (e, s) {
-      print('[pdf][PdfGraphics.shapeBoundingBox] Error writing SVG shape $d: $e\n$s');
+      print(
+          '[pdf][PdfGraphics.shapeBoundingBox] Error writing SVG shape $d: $e\n$s');
     }
     return proxy.box;
   }
@@ -1390,7 +1398,9 @@ class _PathProxy extends PathProxy {
 }
 
 class _PathBBProxy extends PathProxy {
-  _PathBBProxy();
+  _PathBBProxy(this.transform);
+
+  final Matrix4? transform;
 
   var _xMin = double.infinity;
   var _yMin = double.infinity;
@@ -1413,6 +1423,18 @@ class _PathBBProxy extends PathProxy {
   @override
   void cubicTo(
       double x1, double y1, double x2, double y2, double x3, double y3) {
+    final matrix = transform;
+    if (matrix != null) {
+      final p1 = matrix.transform3(Vector3(x1, y1, 0));
+      final p2 = matrix.transform3(Vector3(x2, y2, 0));
+      final p3 = matrix.transform3(Vector3(x3, y3, 0));
+      x1 = p1.x;
+      y1 = p1.y;
+      x2 = p2.x;
+      y2 = p2.y;
+      x3 = p3.x;
+      y3 = p3.y;
+    }
     final tValues = <double>[];
     double a, b, c, t, t1, t2, b2ac, sqrtB2ac;
 
@@ -1478,17 +1500,14 @@ class _PathBBProxy extends PathProxy {
 
   @override
   void lineTo(double x, double y) {
-    _pX = x;
-    _pY = y;
-    _updateMinMax(x, y);
+    final point = transform?.transform3(Vector3(x, y, 0));
+    _pX = point?.x ?? x;
+    _pY = point?.y ?? y;
+    _updateMinMax(_pX, _pY);
   }
 
   @override
-  void moveTo(double x, double y) {
-    _pX = x;
-    _pY = y;
-    _updateMinMax(x, y);
-  }
+  void moveTo(double x, double y) => lineTo(x, y);
 
   void _updateMinMax(double x, double y) {
     _xMin = math.min(_xMin, x);

@@ -9,6 +9,62 @@ import 'package:test/test.dart';
 import 'utils.dart';
 
 void main() {
+  test('PDF link rectangles leave holes and hidden areas unclickable',
+      () async {
+    final document = Document(compress: false)
+      ..addPage(Page(
+        pageFormat: const PdfPageFormat(200, 145),
+        margin: EdgeInsets.zero,
+        build: (_) => SvgImage(
+          defaultFont: loadFont('open-sans.ttf'),
+          svg: '''<svg viewBox="0 0 200 145" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <clipPath id="hole">
+    <path clip-rule="evenodd" d="M0 0H130V35H0Z M40 0H80V35H40Z"/>
+  </clipPath>
+  <clipPath id="overlap" clip-rule="evenodd">
+    <rect width="80" height="35"/><rect x="40" width="90" height="35"/>
+  </clipPath>
+  <mask id="ink"><g><rect width="130" height="35" fill="white"/><rect x="40" width="40" height="35" fill="black"/></g></mask>
+</defs>
+<g fill="#111111" font-size="20">
+  <g clip-path="url(#hole)"><text x="5" y="23" data-href="https://example.org/compound">MMMMMMMM</text></g>
+  <g transform="translate(0 50)" clip-path="url(#overlap)"><text x="5" y="23" data-href="https://example.org/overlap">MMMMMMMM</text></g>
+  <g transform="translate(0 100)" mask="url(#ink)"><text x="5" y="23" data-href="https://example.org/masked">MMMMMMMM</text></g>
+</g></svg>''',
+        ),
+      ));
+    final bytes = await document.save();
+    final artifact = Platform.environment['PDF_LINK_REGION_ARTIFACT'];
+    if (artifact != null) {
+      await File(artifact).writeAsBytes(bytes);
+    }
+    final pdf = latin1.decode(bytes);
+    bool clickable(String link, double x, double y) =>
+        RegExp(r'/Subtype/Link(?:(?!endobj).)*?/URI\(https://example.org/(\w+)\)',
+                dotAll: true)
+            .allMatches(pdf)
+            .where((match) => match[1] == link)
+            .any((match) {
+          final rect = RegExp(r'/Rect\s*\[([^\]]+)\]')
+              .firstMatch(match[0]!)![1]!
+              .trim()
+              .split(RegExp(r'\s+'))
+              .map(double.parse)
+              .toList();
+          final pdfY = 145 - y;
+          return x > rect[0] && x < rect[2] && pdfY > rect[1] && pdfY < rect[3];
+        });
+
+    expect(clickable('compound', 25, 18.2), isTrue);
+    expect(clickable('compound', 100, 18.2), isTrue);
+    expect(clickable('compound', 60, 18.2), isFalse);
+    expect(clickable('overlap', 60, 68.2), isTrue);
+    expect(clickable('masked', 25, 118.2), isTrue);
+    expect(clickable('masked', 100, 118.2), isTrue);
+    expect(clickable('masked', 60, 118.2), isFalse);
+  });
+
   test('SVG link annotations match the visible parts of clipped runs',
       () async {
     final directory = await Directory.systemTemp.createTemp('pdf-link-clips-');

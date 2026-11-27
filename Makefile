@@ -44,7 +44,7 @@ pdf/material.ttf:
 	curl -L "https://github.com/google/material-design-icons/raw/master/font/MaterialIcons-Regular.ttf" > $@
 
 pdf/emoji.ttf:
-	curl -L https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf > $@
+	curl -L https://raw.githubusercontent.com/googlefonts/noto-emoji/main/2D/fonts/NotoColorEmoji.ttf > $@
 
 demo/assets/logo.svg:
 	curl -L "http://pigment.github.io/fake-logos/logos/vector/color/auto-speed.svg" > $@

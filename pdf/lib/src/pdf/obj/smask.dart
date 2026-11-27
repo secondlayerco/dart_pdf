@@ -29,8 +29,10 @@ class PdfSoftMask {
       {required PdfRect boundingBox,
       bool isolated = false,
       bool knockout = false,
-      bool invert = false}) {
-    _mask = PdfGraphicXObject(document, '/Form');
+      bool invert = false,
+      this.useAlpha = false}) {
+    _mask = PdfGraphicXObject(document, '/Form')
+      ..isolatedTransparency = useAlpha;
     _mask.params['/BBox'] = PdfArray.fromNum([
       boundingBox.x,
       boundingBox.y,
@@ -55,6 +57,8 @@ class PdfSoftMask {
 
   final PdfDocument document;
 
+  final bool useAlpha;
+
   late PdfGraphicXObject _mask;
 
   PdfGraphics? _graphics;
@@ -68,7 +72,7 @@ class PdfSoftMask {
 
   PdfDict output() {
     final params = PdfDict.values({
-      '/S': const PdfName('/Luminosity'),
+      '/S': useAlpha ? const PdfName('/Alpha') : const PdfName('/Luminosity'),
       '/G': _mask.ref(),
     });
 

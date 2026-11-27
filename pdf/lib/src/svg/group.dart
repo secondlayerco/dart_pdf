@@ -16,6 +16,7 @@
 
 import 'dart:math';
 
+import 'package:vector_math/vector_math_64.dart';
 import 'package:xml/xml.dart';
 
 import '../../pdf.dart';
@@ -71,16 +72,24 @@ class SvgGroup extends SvgOperation {
   }
 
   @override
-  PdfRect boundingBox() {
-    var x = double.infinity, y = double.infinity, w = 0.0, h = 0.0;
-    for (final child in children) {
-      final b = child.boundingBox();
-      x = min(b.x, x);
-      y = min(b.y, y);
-      w = max(b.width, w);
-      h = max(b.height, w);
-    }
+  PdfRect boundingBox() => boundingBoxIn(null);
 
-    return PdfRect(x, y, w, h);
+  @override
+  PdfRect boundingBoxIn(Matrix4? matrix) {
+    var x = double.infinity, y = double.infinity;
+    var right = double.negativeInfinity, top = double.negativeInfinity;
+    for (final child in children) {
+      final box = child.transformedBoundingBox(matrix);
+      if (identical(box, PdfRect.zero)) {
+        continue;
+      }
+      x = min(x, box.left);
+      y = min(y, box.bottom);
+      right = max(right, box.right);
+      top = max(top, box.top);
+    }
+    return x.isFinite && y.isFinite && right.isFinite && top.isFinite
+        ? PdfRect.fromLTRB(x, y, right, top)
+        : PdfRect.zero;
   }
 }

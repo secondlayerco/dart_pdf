@@ -82,6 +82,7 @@ class SvgPainter {
   final PdfPage? page;
 
   final linkClips = <SvgLinkClip>[];
+  var linkDefinitionDepth = 0;
 
   /// Patterns parsed so far, by id
   final patterns = <String, SvgPattern>{};

@@ -107,5 +107,13 @@ class SvgUse extends SvgOperation {
   }
 
   @override
-  PdfRect boundingBox() => href!.boundingBox();
+  PdfRect boundingBox() => boundingBoxIn(null);
+
+  @override
+  PdfRect boundingBoxIn(Matrix4? matrix) {
+    final translation = Matrix4.translationValues(x, y, 0);
+    final placed =
+        matrix == null ? translation : (matrix.clone()..multiply(translation));
+    return href?.transformedBoundingBox(placed) ?? PdfRect.zero;
+  }
 }

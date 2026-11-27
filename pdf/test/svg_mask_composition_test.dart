@@ -26,6 +26,10 @@ void main() {
                     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="$viewBox">$body</svg>')));
       final file = File('${directory.path}/mask.pdf');
       await file.writeAsBytes(await document.save());
+      final proof = Platform.environment['PDF_MASK_ARTIFACT'];
+      if (proof != null) {
+        await file.copy(proof);
+      }
       final result = await Process.run(
           Platform.environment['PDF_RASTERIZER'] ?? 'pdftoppm', [
         '-r',
@@ -45,6 +49,76 @@ void main() {
   }
 
   group('SVG mask composition ::', () {
+    test('object bounding box clips and masks follow translated targets',
+        () async {
+      final image = await raster('''
+<defs>
+ <clipPath id="clip" clipPathUnits="objectBoundingBox"><rect width=".5" height="1"/></clipPath>
+ <mask id="mask" maskContentUnits="objectBoundingBox"><rect width=".5" height="1" fill="white" opacity=".5"/></mask>
+</defs>
+<g transform="translate(20 10)" clip-path="url(#clip)">
+ <rect x="10" width="55" height="50" fill="red"/>
+ <rect x="35" width="35" height="50" fill="red" transform="translate(20)"/>
+</g>
+<rect x="30" y="80" width="100" height="50" fill="red" mask="url(#mask)"/>''');
+      expect(image.getPixel(45, 35).g, 0);
+      expect(image.getPixel(68, 35).g, 0);
+      expect(image.getPixel(78, 35).g, 255);
+      expect(image.getPixel(75, 105).g, inInclusiveRange(127, 128));
+      expect(image.getPixel(95, 105).g, 255);
+    });
+
+    test('object geometry excludes empty nodes and bounds rotated curves',
+        () async {
+      final image = await raster('''
+<defs>
+ <clipPath id="right" clipPathUnits="objectBoundingBox"><rect x=".5" width=".5" height="1"/></clipPath>
+ <clipPath id="left" clipPathUnits="objectBoundingBox"><rect width=".25" height="1"/></clipPath>
+</defs>
+<g clip-path="url(#right)">
+ <g/>
+ <rect x="100" y="10" width="100" height="50" fill="red"/>
+</g>
+<g clip-path="url(#left)">
+ <g transform="rotate(45 70 110)"><circle cx="70" cy="110" r="20" fill="red"/></g>
+</g>''');
+      expect(image.getPixel(110, 35).g, 255);
+      expect(image.getPixel(165, 35).g, 0);
+      expect(image.getPixel(57, 110).g, 0);
+      expect(image.getPixel(64, 110).g, 255);
+    });
+
+    test('explicit mask regions clip even opaque mask content', () async {
+      final image = await raster('''
+<defs>
+ <mask id="object" x=".25" y="0" width=".5" height="1"><rect width="200" height="160" fill="white"/></mask>
+ <mask id="user" maskUnits="userSpaceOnUse" x="50" y="80" width="40" height="50"><rect width="200" height="160" fill="white"/></mask>
+</defs>
+<rect x="20" y="0" width="120" height="50" fill="red" mask="url(#object)"/>
+<rect x="20" y="80" width="120" height="50" fill="red" mask="url(#user)"/>''');
+      expect(image.getPixel(30, 25).g, 255);
+      expect(image.getPixel(75, 25).g, 0);
+      expect(image.getPixel(125, 25).g, 255);
+      expect(image.getPixel(30, 105).g, 255);
+      expect(image.getPixel(75, 105).g, 0);
+      expect(image.getPixel(105, 105).g, 255);
+    });
+
+    test('alpha masks use the opacity of black paint', () async {
+      final image = await raster('''
+<defs>
+ <mask id="attribute" mask-type="alpha"><rect width="50" height="50" fill="black" opacity=".5"/></mask>
+ <mask id="style" style="mask-type:alpha"><rect width="50" height="50" fill="black" opacity=".5"/></mask>
+ <mask id="luminance"><rect width="50" height="50" fill="black" opacity=".5"/></mask>
+</defs>
+<rect width="50" height="50" fill="red" mask="url(#attribute)"/>
+<g transform="translate(60)"><rect width="50" height="50" fill="red" mask="url(#style)"/></g>
+<g transform="translate(120)"><rect width="50" height="50" fill="red" mask="url(#luminance)"/></g>''');
+      expect(image.getPixel(25, 25).g, inInclusiveRange(127, 128));
+      expect(image.getPixel(85, 25).g, inInclusiveRange(127, 128));
+      expect(image.getPixel(145, 25).g, 255);
+    });
+
     test('nested masks multiply gradient alpha at actual painted pixels',
         () async {
       final image = await raster('''
